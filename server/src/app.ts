@@ -1,3 +1,4 @@
+import { installWorkforce } from "./workforce/index.js";
 import express, { type ErrorRequestHandler } from "express";
 import session from "express-session";
 import helmet from "helmet";
@@ -5,7 +6,7 @@ import { rateLimit } from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import { ZodError } from "zod";
 import type { Config } from "./config.js";
-import { googleConfigured, sheetsConfigured } from "./config.js";
+import { googleConfigured, databaseConfigured } from "./config.js";
 import type { Repository } from "./repository.js";
 import { FileSessionStore } from "./session-store.js";
 import {
@@ -89,18 +90,31 @@ export function createApp({
       },
     }),
   );
-  app.get("/api/health", (_req, res) =>
-    res.json({
+  app.get("/api/health", async (_req, res) => {
+    const configured = databaseConfigured(config);
+    let connected = false;
+    if (configured) {
+      try {
+        connected = repository.health
+          ? (await repository.health()).connected
+          : true;
+      } catch {}
+    }
+    res.status(configured && !connected ? 503 : 200).json({
       data: {
         status:
-          googleConfigured(config) && sheetsConfigured(config)
-            ? "ready"
-            : "setup_required",
+          !configured || !googleConfigured(config)
+            ? "setup_required"
+            : connected
+              ? "ready"
+              : "degraded",
         googleConfigured: googleConfigured(config),
-        sheetsConfigured: sheetsConfigured(config),
+        databaseConfigured: configured,
+        databaseConnected: connected,
+        storage: "postgresql",
       },
-    }),
-  );
+    });
+  });
   app.use(
     session({
       name: "easymanage.sid",
@@ -121,11 +135,11 @@ export function createApp({
   const ctx = new ApiContext(repository);
   installAuth(
     app,
-    repository,
+    ctx,
     config,
-    ctx.mutex,
     googleProvider || new RealGoogleProvider(config),
   );
+  installWorkforce(app, ctx, config);
   installDomain(app, ctx);
   installPayroll(app, ctx);
   installReporting(app, ctx);
@@ -145,64 +159,68 @@ export function createApp({
       res.redirect(`${config.origin}/login?error=${encodeURIComponent(code)}`);
       return;
     }
-    if (err instanceof ZodError) {
+    if (
+      err.code === "LIMIT_FILE_SIZE" ||
+      err.code === "LIMIT_UNEXPECTED_FILE"
+    ) {
       res
         .status(422)
         .json({
           error: {
-            code: "VALIDATION_ERROR",
-            message: "Some fields need attention.",
-            details: err.flatten(),
+            code: "FILE_UPLOAD_REJECTED",
+            message: "Choose one permitted file of 5 MB or less.",
           },
         });
+      return;
+    }
+    if (err instanceof ZodError) {
+      res.status(422).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Some fields need attention.",
+          details: err.flatten(),
+        },
+      });
       return;
     }
     if (err instanceof AppError) {
-      res
-        .status(err.status)
-        .json({
-          error: {
-            code: err.code,
-            message: err.message,
-            ...(err.details ? { details: err.details } : {}),
-          },
-        });
+      res.status(err.status).json({
+        error: {
+          code: err.code,
+          message: err.message,
+          ...(err.details ? { details: err.details } : {}),
+        },
+      });
       return;
     }
     if (err.type === "entity.parse.failed") {
-      res
-        .status(400)
-        .json({
-          error: {
-            code: "INVALID_JSON",
-            message: "The request body is not valid JSON.",
-          },
-        });
+      res.status(400).json({
+        error: {
+          code: "INVALID_JSON",
+          message: "The request body is not valid JSON.",
+        },
+      });
       return;
     }
     if (err.type === "entity.too.large") {
-      res
-        .status(413)
-        .json({
-          error: {
-            code: "REQUEST_TOO_LARGE",
-            message: "The request body is too large.",
-          },
-        });
+      res.status(413).json({
+        error: {
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large.",
+        },
+      });
       return;
     }
     console.error(
       "Unhandled API error:",
       err instanceof Error ? err.message : "Unknown error",
     );
-    res
-      .status(500)
-      .json({
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "The request could not be completed.",
-        },
-      });
+    res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "The request could not be completed.",
+      },
+    });
   };
   app.use(error);
   return app;

@@ -9,11 +9,30 @@ export interface Change {
   table: string;
   record: Row;
 }
+export interface RepositoryQuery {
+  where?: Record<string, any>;
+  orderBy?: { field: string; direction: "asc" | "desc" }[];
+  skip?: number;
+  take?: number;
+}
 export interface Repository {
   list(table: string): Promise<Row[]>;
   commit(changes: Change[]): Promise<void>;
   initialize(): Promise<void>;
   invalidate?(): void;
+  forCompany?(companyId: string): Repository;
+  transaction?<T>(fn: (tx: Repository) => Promise<T>): Promise<T>;
+  find?(table: string, id: string): Promise<Row | null>;
+  query?(
+    table: string,
+    options: RepositoryQuery,
+  ): Promise<{ rows: Row[]; total: number }>;
+  health?(): Promise<{
+    connected: boolean;
+    provider: string;
+    companyId?: string;
+  }>;
+  disconnect?(): Promise<void>;
 }
 export class Mutex {
   private tail: Promise<unknown> = Promise.resolve();
@@ -411,9 +430,11 @@ export class RequestData {
     return this.rows.get(table)!;
   }
   async find(table: string, id: string) {
-    const row = (await this.list(table)).find(
-      (r) => String(r[ID_FIELD[table]]) === id || r.run_id === id,
-    );
+    const row = this.repository.find
+      ? await this.repository.find(table, id)
+      : (await this.list(table)).find(
+          (r) => String(r[ID_FIELD[table]]) === id || r.run_id === id,
+        );
     if (!row)
       throw new AppError(
         404,

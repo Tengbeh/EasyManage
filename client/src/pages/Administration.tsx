@@ -442,7 +442,7 @@ function ConnectionSettings() {
         </div>
       </SectionCard>
       <SectionCard
-        title="Google Sheets"
+        title="PostgreSQL database"
         subtitle="Your workspace’s persistent data connection"
       >
         <div className="connection-content">
@@ -460,7 +460,7 @@ function ConnectionSettings() {
           />
           <p>
             Employee records, payroll snapshots, and audit history are stored in
-            the configured spreadsheet.
+            the company’s PostgreSQL database.
           </p>
           <Button
             variant="outline"

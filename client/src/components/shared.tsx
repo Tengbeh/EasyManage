@@ -483,17 +483,24 @@ export type Field = {
     | "select"
     | "permissions"
     | "url"
-    | "confirmation";
+    | "confirmation"
+    | "checkbox"
+    | "multi-select"
+    | "datetime-local";
   required?: boolean;
   options?: { label: string; value: string }[];
-  relation?: "employees" | "departments";
+  relation?: string;
+  relationId?: string;
+  relationLabel?: string;
+  relationFilters?: Row;
   placeholder?: string;
   hint?: string;
   section?: string;
   wide?: boolean;
   min?: number;
   max?: number;
-  default?: string;
+  decimalPlaces?: number;
+  default?: string | boolean | string[];
 };
 export const options = (values: string[]) =>
   values.map((value) => ({ value, label: titleCase(value) }));
@@ -509,7 +516,14 @@ export function RelationSelect({
   invalid?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const q = useList(field.relation!, { search, pageSize: 100 });
+  const q = useList(field.relation!, {
+    search,
+    pageSize: 100,
+    ...field.relationFilters,
+  });
+  const idField =
+    field.relationId ||
+    (field.relation === "employees" ? "employee_id" : "department_id");
   const items = q.data?.data || [];
   return (
     <div className="relation-select">
@@ -531,29 +545,14 @@ export function RelationSelect({
         <option value="">
           {q.isPending ? "Loading…" : `Select ${field.label.toLowerCase()}`}
         </option>
-        {value &&
-          !items.some(
-            (r) =>
-              r[
-                field.relation === "employees" ? "employee_id" : "department_id"
-              ] === value,
-          ) && <option value={value}>{value}</option>}
+        {value && !items.some((r) => r[idField] === value) && (
+          <option value={value}>{value}</option>
+        )}
         {items.map((r) => (
-          <option
-            key={
-              r[
-                field.relation === "employees" ? "employee_id" : "department_id"
-              ]
-            }
-            value={
-              r[
-                field.relation === "employees" ? "employee_id" : "department_id"
-              ]
-            }
-          >
+          <option key={r[idField]} value={r[idField]}>
             {field.relation === "employees"
               ? `${personName(r)}${r.employee_number ? " · " + r.employee_number : ""}`
-              : r.department_name}
+              : r[field.relationLabel || "department_name"]}
           </option>
         ))}
       </select>
@@ -585,6 +584,11 @@ export const PERMISSIONS = [
   "payroll.pay",
   "attendance.read",
   "attendance.write",
+  "attendance.approve",
+  "self.attendance",
+  "self.leave",
+  "workforce.manage",
+  "attendance.payroll",
   "leave.read",
   "leave.write",
   "leave.approve",
@@ -603,8 +607,16 @@ function formSchema(fields: Field[]) {
       });
       continue;
     }
-    if (f.type === "permissions") {
-      shape[f.name] = z.array(z.string());
+    if (f.type === "checkbox") {
+      shape[f.name] = z.boolean();
+      continue;
+    }
+    if (f.type === "permissions" || f.type === "multi-select") {
+      shape[f.name] = f.required
+        ? z
+            .array(z.string())
+            .min(1, `Choose at least one ${f.label.toLowerCase()}`)
+        : z.array(z.string());
       continue;
     }
     let schema = z.string();
@@ -625,8 +637,15 @@ function formSchema(fields: Field[]) {
       );
     if (f.type === "money")
       validated = validated.refine(
-        (v: string) => !v || /^\d+(\.\d{1,2})?$/.test(v),
-        "Use a positive amount with up to two decimal places",
+        (v: string) =>
+          !v ||
+          new RegExp(`^\\d+(\\.\\d{1,${f.decimalPlaces ?? 2}})?$`).test(v),
+        `Use a positive amount with up to ${f.decimalPlaces ?? 2} decimal places`,
+      );
+    if (f.type === "datetime-local")
+      validated = validated.refine(
+        (v) => !v || !Number.isNaN(Date.parse(v + "Z")),
+        "Enter a valid date and time",
       );
     if (f.type === "number")
       validated = validated.refine(
@@ -659,6 +678,12 @@ function formSchema(fields: Field[]) {
     shape[f.name] = validated;
   }
   return z.object(shape).superRefine((data, ctx) => {
+    if (data.role === "employee" && !data.employee_id)
+      ctx.addIssue({
+        code: "custom",
+        path: ["employee_id"],
+        message: "Link an employee record for employee accounts",
+      });
     if (data.employment_status === "terminated" && !data.employment_end_date)
       ctx.addIssue({
         code: "custom",
@@ -690,6 +715,28 @@ function formSchema(fields: Field[]) {
         code: "custom",
         path: ["installment_amount"],
         message: "An installment cannot exceed the loan amount",
+      });
+    if (
+      data.date &&
+      ["present", "late", "half_day"].includes(String(data.status)) &&
+      !data.clock_in
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["clock_in"],
+        message: "Clock-in is required for working attendance",
+      });
+    if (data.clock_out && !data.clock_in)
+      ctx.addIssue({
+        code: "custom",
+        path: ["clock_in"],
+        message: "Clock-in is required before clock-out",
+      });
+    if (data.clock_in && data.clock_out && data.clock_out <= data.clock_in)
+      ctx.addIssue({
+        code: "custom",
+        path: ["clock_out"],
+        message: "Clock-out must be after clock-in",
       });
     if (data.start_date && data.end_date && data.end_date < data.start_date)
       ctx.addIssue({
@@ -732,11 +779,15 @@ export function DataForm({
       f.name,
       f.type === "confirmation"
         ? false
-        : f.type === "permissions"
-          ? Array.isArray(initial[f.name])
-            ? initial[f.name]
-            : []
-          : String(initial[f.name] ?? f.default ?? ""),
+        : f.type === "checkbox"
+          ? Boolean(initial[f.name] ?? f.default ?? false)
+          : f.type === "permissions" || f.type === "multi-select"
+            ? Array.isArray(initial[f.name])
+              ? initial[f.name]
+              : Array.isArray(f.default)
+                ? f.default
+                : []
+            : String(initial[f.name] ?? f.default ?? ""),
     ]),
   );
   const {
@@ -771,6 +822,32 @@ export function DataForm({
                   }
                   invalid={!!errors[f.name]}
                 />
+              ) : f.type === "checkbox" ? (
+                <div className="workforce-check">
+                  <input
+                    id={`field-${f.name}`}
+                    type="checkbox"
+                    {...register(f.name)}
+                  />
+                  <span>{f.hint || f.label}</span>
+                </div>
+              ) : f.type === "multi-select" ? (
+                <div
+                  className="workforce-options"
+                  role="group"
+                  aria-label={f.label}
+                >
+                  {f.options?.map((option) => (
+                    <label key={option.value}>
+                      <input
+                        type="checkbox"
+                        value={option.value}
+                        {...register(f.name)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
               ) : f.type === "confirmation" ? (
                 <label className="confirmation-check">
                   <input
@@ -842,7 +919,7 @@ export function DataForm({
                 >
                   {String(errors[f.name]?.message)}
                 </small>
-              ) : f.hint ? (
+              ) : f.hint && f.type !== "checkbox" ? (
                 <small className="field-hint">{f.hint}</small>
               ) : null}
             </div>

@@ -3,13 +3,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { readConfig } from "./config.js";
-import { SheetsRepository } from "./repository.js";
+import { PostgresRepository } from "./repositories/postgres.js";
 import { createApp } from "./app.js";
-import { acquireWriterLock } from "./writer-lock.js";
 import { FileSessionStore } from "./session-store.js";
 const config = readConfig();
-const release = await acquireWriterLock(config.spreadsheetId);
-const repository = new SheetsRepository(config);
+const repository = new PostgresRepository({
+  connectionString: config.databaseUrl,
+  companyId: config.defaultCompanyId,
+});
+if (config.databaseUrl) await repository.initialize();
 const sessions = new FileSessionStore(config.sessionDir);
 await sessions.prune();
 const app = createApp({ repository, config, sessionStore: sessions });
@@ -39,7 +41,7 @@ async function stop() {
   closing = true;
   clearInterval(cleanup);
   server.close(async () => {
-    await release();
+    await repository.disconnect();
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 15000).unref();

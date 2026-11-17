@@ -425,10 +425,16 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Role",
         type: "select",
         required: true,
-        options: options(["administrator", "hr", "accountant"]),
+        options: options(["administrator", "hr", "accountant", "employee"]),
         default: "hr",
       },
       { name: "department", label: "Department" },
+      {
+        name: "employee_id",
+        label: "Linked employee",
+        relation: "employees",
+        hint: "Required for employee accounts and personal attendance or leave access. Each account sees only its linked employee.",
+      },
       {
         name: "status",
         label: "Status",
@@ -448,6 +454,7 @@ export const resources: Record<string, ResourceConfig> = {
     columns: [
       { key: "full_name", label: "Member", type: "user" },
       { key: "role", label: "Role", type: "enum" },
+      { key: "employee_id", label: "Linked employee", type: "employee" },
       { key: "department", label: "Department" },
       { key: "status", label: "Status", type: "status" },
       { key: "created_at", label: "Added", type: "date" },

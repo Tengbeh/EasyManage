@@ -1,3 +1,4 @@
+import { Workforce } from "@/pages/Workforce";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import {
@@ -640,6 +641,8 @@ export function EmployeeProfile() {
             })
           }
         />
+      ) : ["attendance", "leave"].includes(tab) ? (
+        <Workforce key={tab} initialTab={tab} fixedEmployeeId={id} embedded />
       ) : (
         <ResourcePage
           key={tab}

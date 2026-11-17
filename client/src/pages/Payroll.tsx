@@ -1,3 +1,4 @@
+import { PayrollInputBreakdown } from "./workforce/PayrollInputs";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -554,6 +555,35 @@ export function Payroll() {
               ]}
             />
           </SectionCard>
+          {rows.some(
+            (r) =>
+              Array.isArray(r.attendance_inputs) &&
+              r.attendance_inputs.length > 0,
+          ) && (
+            <SectionCard
+              title="Attendance inputs in this payroll"
+              subtitle="Approved source calculations preserved with each employee payroll snapshot"
+            >
+              {rows
+                .filter((r) => r.attendance_inputs?.length)
+                .map((r) => (
+                  <details
+                    key={r.employee_id}
+                    className="workforce-snapshot-detail"
+                  >
+                    <summary>
+                      {r.employee_name || personName(r)} ·{" "}
+                      {r.attendance_inputs.length} attendance input
+                      {r.attendance_inputs.length === 1 ? "" : "s"}
+                    </summary>
+                    <PayrollInputBreakdown
+                      inputs={r.attendance_inputs}
+                      currency={currency}
+                    />
+                  </details>
+                ))}
+            </SectionCard>
+          )}
           <div className="payroll-action-bar">
             <p>
               <LockKeyhole size={15} />

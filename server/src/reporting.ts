@@ -272,7 +272,7 @@ export const safeCell = (v: unknown) => {
 };
 const label = (s: string) =>
   s.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-async function exportRows(
+export async function exportRows(
   res: Response,
   rows: Row[],
   type: string,
