@@ -175,8 +175,9 @@ export function Login() {
                 <div>
                   <strong>Your workspace needs a connection</strong>
                   <p>
-                    Connect Google sign-in and Google Sheets to activate your
-                    workspace.
+                    {health.data?.data?.googleConfigured
+                      ? "Google OAuth credentials are configured. Connect the company spreadsheet and authorize your administrator to enable sign-in."
+                      : "Connect Google sign-in and Google Sheets to activate your workspace."}
                   </p>
                 </div>
               </div>
