@@ -306,6 +306,536 @@ SCHEMA.Salary_History.push(
 );
 SCHEMA.Payroll_Runs.push("reviewed_by", "reviewed_at", "source_hash");
 SCHEMA.Loan_Installments.push("payroll_run_id", "applied_payroll_run_id");
+
+// Workforce models retain the same canonical record identifiers in every repository.
+SCHEMA.Departments = [
+  ...new Set([
+    ...(SCHEMA.Departments || []),
+    ...[
+      "department_id",
+      "department_name",
+      "description",
+      "department_head",
+      "status",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Employees = [
+  ...new Set([
+    ...(SCHEMA.Employees || []),
+    ...[
+      "employee_id",
+      "employee_number",
+      "first_name",
+      "last_name",
+      "email",
+      "phone",
+      "address",
+      "gender",
+      "position",
+      "employment_type",
+      "employment_status",
+      "payment_frequency",
+      "bank_name",
+      "account_number",
+      "emergency_contact",
+      "profile_image",
+      "notes",
+      "department_id",
+      "date_of_birth",
+      "hire_date",
+      "employment_end_date",
+      "basic_salary",
+      "allowances",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Users = [
+  ...new Set([
+    ...(SCHEMA.Users || []),
+    ...[
+      "user_id",
+      "full_name",
+      "email",
+      "google_id",
+      "profile_image",
+      "role",
+      "department",
+      "status",
+      "employee_id",
+      "permissions",
+      "last_login",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Bonuses = [
+  ...new Set([
+    ...(SCHEMA.Bonuses || []),
+    ...[
+      "bonus_id",
+      "employee_id",
+      "payroll_id",
+      "bonus_type",
+      "description",
+      "effective_month",
+      "status",
+      "reason",
+      "created_by",
+      "approved_by",
+      "rejection_reason",
+      "amount",
+      "approved_at",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Penalties = [
+  ...new Set([
+    ...(SCHEMA.Penalties || []),
+    ...[
+      "penalty_id",
+      "employee_id",
+      "payroll_id",
+      "penalty_type",
+      "description",
+      "effective_month",
+      "status",
+      "reason",
+      "created_by",
+      "approved_by",
+      "rejection_reason",
+      "amount",
+      "approved_at",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Loans = [
+  ...new Set([
+    ...(SCHEMA.Loans || []),
+    ...[
+      "loan_id",
+      "employee_id",
+      "loan_amount",
+      "outstanding_balance",
+      "installment_amount",
+      "installment_frequency",
+      "description",
+      "reason",
+      "status",
+      "approved_by",
+      "created_by",
+      "rejection_reason",
+      "start_date",
+      "end_date",
+      "approved_at",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Loan_Installments = [
+  ...new Set([
+    ...(SCHEMA.Loan_Installments || []),
+    ...[
+      "installment_id",
+      "loan_id",
+      "employee_id",
+      "payroll_run_id",
+      "installment_amount",
+      "amount_paid",
+      "remaining_balance",
+      "reserved_amount",
+      "due_date",
+      "payment_date",
+      "installment_number",
+      "status",
+      "payroll_month",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Payroll_Runs = [
+  ...new Set([
+    ...(SCHEMA.Payroll_Runs || []),
+    ...[
+      "payroll_run_id",
+      "payroll_month",
+      "status",
+      "generated_by",
+      "submitted_by",
+      "approved_by",
+      "finalized_by",
+      "paid_by",
+      "reviewed_by",
+      "rejection_reason",
+      "source_hash",
+      "total_employees",
+      "revision",
+      "total_basic_salary",
+      "total_allowances",
+      "total_bonuses",
+      "total_gross_salary",
+      "total_penalties",
+      "total_loan_deductions",
+      "total_deductions",
+      "total_net_payroll",
+      "approved_at",
+      "finalized_at",
+      "paid_at",
+      "reviewed_at",
+      "created_at",
+      "updated_at",
+      "warnings_json",
+    ],
+  ]),
+];
+SCHEMA.Payroll = [
+  ...new Set([
+    ...(SCHEMA.Payroll || []),
+    ...[
+      "payroll_id",
+      "employee_id",
+      "payroll_run_id",
+      "department_id",
+      "payroll_month",
+      "employee_name",
+      "payment_status",
+      "status",
+      "snapshot_json",
+      "basic_salary",
+      "allowances",
+      "bonuses",
+      "gross_salary",
+      "penalties",
+      "loan_deductions",
+      "other_deductions",
+      "tax_deductions",
+      "total_deductions",
+      "net_salary",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Attendance = [
+  ...new Set([
+    ...(SCHEMA.Attendance || []),
+    ...[
+      "attendance_id",
+      "employee_id",
+      "date",
+      "check_in",
+      "check_out",
+      "attendance_status",
+      "status",
+      "notes",
+      "source",
+      "approval_status",
+      "reason",
+      "clock_in",
+      "clock_out",
+      "created_at",
+      "updated_at",
+      "finalized_at",
+      "approved_at",
+      "work_minutes",
+      "break_minutes",
+      "overtime_minutes",
+      "late_minutes",
+      "early_minutes",
+      "breaks",
+      "schedule_snapshot",
+    ],
+  ]),
+];
+SCHEMA.Leave = [
+  ...new Set([
+    ...(SCHEMA.Leave || []),
+    ...[
+      "leave_id",
+      "employee_id",
+      "leave_type_id",
+      "supporting_attachment_id",
+      "leave_type",
+      "reason",
+      "status",
+      "created_by",
+      "approved_by",
+      "rejection_reason",
+      "start_date",
+      "end_date",
+      "days",
+      "approval_level",
+      "approval_roles",
+      "approved_at",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Company_Settings = [
+  ...new Set([
+    ...(SCHEMA.Company_Settings || []),
+    ...[
+      "setting_id",
+      "company_name",
+      "company_logo",
+      "company_email",
+      "company_phone",
+      "company_address",
+      "currency",
+      "date_format",
+      "timezone",
+      "default_payment_frequency",
+      "payroll_start_day",
+      "payroll_end_day",
+      "configured_deductions",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Audit_Logs = [
+  ...new Set([
+    ...(SCHEMA.Audit_Logs || []),
+    ...[
+      "log_id",
+      "user_id",
+      "user_email",
+      "action",
+      "module",
+      "record_id",
+      "previous_value",
+      "new_value",
+      "ip_address",
+      "timestamp",
+      "created_at",
+    ],
+  ]),
+];
+SCHEMA.Salary_History = [
+  ...new Set([
+    ...(SCHEMA.Salary_History || []),
+    ...[
+      "salary_history_id",
+      "employee_id",
+      "basic_salary",
+      "allowances",
+      "previous_amount",
+      "previous_allowances",
+      "payment_frequency",
+      "previous_payment_frequency",
+      "reason",
+      "changed_by",
+      "effective_date",
+      "created_at",
+    ],
+  ]),
+];
+SCHEMA.Notifications_Read = [
+  ...new Set([
+    ...(SCHEMA.Notifications_Read || []),
+    ...["notification_read_id", "user_id", "notification_id", "read_at"],
+  ]),
+];
+SCHEMA.Idempotency = [
+  ...new Set([
+    ...(SCHEMA.Idempotency || []),
+    ...[
+      "idempotency_id",
+      "user_id",
+      "request_hash",
+      "response_json",
+      "status_code",
+      "created_at",
+    ],
+  ]),
+];
+SCHEMA.Loan_Payments = [
+  ...new Set([
+    ...(SCHEMA.Loan_Payments || []),
+    ...[
+      "payment_id",
+      "loan_id",
+      "installment_id",
+      "employee_id",
+      "payroll_id",
+      "amount",
+      "payment_date",
+      "source",
+      "created_by",
+      "created_at",
+    ],
+  ]),
+];
+SCHEMA.Work_Schedules = [
+  ...new Set([
+    ...(SCHEMA.Work_Schedules || []),
+    ...[
+      "schedule_id",
+      "department_id",
+      "name",
+      "timezone",
+      "expected_start",
+      "expected_end",
+      "work_days",
+      "grace_minutes",
+      "break_minutes",
+      "overtime_after_minutes",
+      "half_day_minutes",
+      "track_breaks",
+      "overtime_enabled",
+      "unpaid_absence_enabled",
+      "overtime_multiplier",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Shift_Assignments = [
+  ...new Set([
+    ...(SCHEMA.Shift_Assignments || []),
+    ...[
+      "assignment_id",
+      "employee_id",
+      "schedule_id",
+      "start_date",
+      "end_date",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Holidays = [
+  ...new Set([
+    ...(SCHEMA.Holidays || []),
+    ...[
+      "holiday_id",
+      "department_id",
+      "date",
+      "name",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Attendance_Corrections = [
+  ...new Set([
+    ...(SCHEMA.Attendance_Corrections || []),
+    ...[
+      "correction_id",
+      "attendance_id",
+      "employee_id",
+      "requested_by",
+      "status",
+      "reason",
+      "comments",
+      "clock_in",
+      "clock_out",
+      "created_at",
+      "updated_at",
+      "break_minutes",
+    ],
+  ]),
+];
+SCHEMA.Leave_Types = [
+  ...new Set([
+    ...(SCHEMA.Leave_Types || []),
+    ...[
+      "leave_type_id",
+      "name",
+      "accrual_mode",
+      "paid",
+      "allow_self_approval",
+      "requires_document",
+      "annual_entitlement",
+      "carry_forward_limit",
+      "carry_expiry_month",
+      "approval_roles",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Leave_Entitlements = [
+  ...new Set([
+    ...(SCHEMA.Leave_Entitlements || []),
+    ...[
+      "entitlement_id",
+      "employee_id",
+      "leave_type_id",
+      "year",
+      "days",
+      "reason",
+      "created_at",
+      "updated_at",
+    ],
+  ]),
+];
+SCHEMA.Approval_Decisions = [
+  ...new Set([
+    ...(SCHEMA.Approval_Decisions || []),
+    ...[
+      "decision_id",
+      "approver_id",
+      "request_id",
+      "request_type",
+      "decision",
+      "comments",
+      "approval_level",
+      "created_at",
+    ],
+  ]),
+];
+SCHEMA.Attendance_Payroll_Inputs = [
+  ...new Set([
+    ...(SCHEMA.Attendance_Payroll_Inputs || []),
+    ...[
+      "input_id",
+      "employee_id",
+      "bonus_id",
+      "penalty_id",
+      "payroll_month",
+      "type",
+      "status",
+      "reason",
+      "amount",
+      "attendance_ids",
+      "calculation",
+      "policy_snapshot",
+      "created_at",
+      "updated_at",
+      "approved_at",
+    ],
+  ]),
+];
+SCHEMA.Leave_Attachments = [
+  ...new Set([
+    ...(SCHEMA.Leave_Attachments || []),
+    ...[
+      "attachment_id",
+      "employee_id",
+      "leave_id",
+      "storage_key",
+      "content_type",
+      "original_name",
+      "sha256",
+      "size",
+      "created_at",
+    ],
+  ]),
+];
+
 export const ID_FIELD: Record<string, string> = Object.fromEntries(
   Object.entries(SCHEMA).map(([t, c]) => [t, c[0]]),
 );

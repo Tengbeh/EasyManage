@@ -35,7 +35,7 @@ export function Login() {
   const [params] = useSearchParams();
   if (session) return <Navigate to="/" replace />;
   const configured =
-    health.data?.data?.googleConfigured && health.data?.data?.sheetsConfigured;
+    health.data?.data?.googleConfigured && health.data?.data?.databaseConnected;
   const error = params.get("error");
   return (
     <div className="login-page">
@@ -176,8 +176,8 @@ export function Login() {
                   <strong>Your workspace needs a connection</strong>
                   <p>
                     {health.data?.data?.googleConfigured
-                      ? "Google OAuth credentials are configured. Connect the company spreadsheet and authorize your administrator to enable sign-in."
-                      : "Connect Google sign-in and Google Sheets to activate your workspace."}
+                      ? "Google OAuth credentials are configured. Connect the PostgreSQL database and authorize your administrator to enable sign-in."
+                      : "Connect Google sign-in and your PostgreSQL database to activate your workspace."}
                   </p>
                 </div>
               </div>
@@ -233,7 +233,11 @@ function oauthError(code: string) {
     GOOGLE_TOKEN_VERIFICATION_FAILED:
       "Google could not verify this sign-in. Please try again.",
     SHEETS_CONNECTION_FAILED:
-      "The company spreadsheet could not be reached. Ask your administrator to check the Google Sheets connection.",
+      "A legacy spreadsheet connection could not be reached. Ask your administrator to check the migration configuration.",
+    DATABASE_CONNECTION_FAILED:
+      "The company database could not be reached. Ask your administrator to check the PostgreSQL connection.",
+    DATABASE_NOT_CONFIGURED:
+      "The company database has not been configured. Ask your administrator to complete workspace setup.",
   };
   return (
     messages[code] ||
@@ -285,7 +289,7 @@ export function Setup() {
           <div className="eyebrow">WORKSPACE SETUP</div>
           <h1>Connect your workspace.</h1>
           <p>
-            EasyManage uses Google sign-in for access and Google Sheets for your
+            EasyManage uses Google sign-in for access and PostgreSQL for your
             company’s records. An administrator needs to complete these
             connections.
           </p>
@@ -316,7 +320,7 @@ export function Setup() {
               <Database size={20} />
             </span>
             <div>
-              <strong>Google Sheets</strong>
+              <strong>PostgreSQL database</strong>
               <small>Persistent company records</small>
             </div>
             <Status
@@ -325,9 +329,11 @@ export function Setup() {
                   ? "checking"
                   : health.isError
                     ? "unknown"
-                    : health.data?.data?.sheetsConfigured
-                      ? "configured"
-                      : "unconfigured"
+                    : health.data?.data?.databaseConnected
+                      ? "connected"
+                      : health.data?.data?.databaseConfigured
+                        ? "disconnected"
+                        : "unconfigured"
               }
             />
           </div>
@@ -342,9 +348,8 @@ export function Setup() {
             icon={Cloud}
           >
             <p>
-              In a Google Cloud project, enable the Google Sheets API. Configure
-              the OAuth consent screen for your organization and create an OAuth
-              web application client.
+              In a Google Cloud project, configure the OAuth consent screen for
+              your organization and create an OAuth web application client.
             </p>
             <a
               className="text-link"
@@ -372,18 +377,19 @@ export function Setup() {
           </SetupStep>
           <SetupStep
             number="03"
-            title="Connect your company spreadsheet"
-            icon={FileSpreadsheet}
+            title="Connect your PostgreSQL database"
+            icon={Database}
           >
             <p>
-              Create a Google service account and a private JSON key. Create a
-              Google spreadsheet, then share it with the service account email
-              as an Editor.
+              Provision a PostgreSQL database and configure its private
+              connection URL on the server. Run the documented Prisma migrations
+              and database bootstrap before signing in.
             </p>
             <p>
-              Configure the spreadsheet ID and service account credentials on
-              the server. EasyManage initializes the required worksheets and
-              stores all business records there.
+              Employee records, attendance, leave, payroll snapshots, and audit
+              history are stored in PostgreSQL. Existing Google Sheets records
+              can be imported using the documented migration tool; preview and
+              verify the import before applying it.
             </p>
           </SetupStep>
           <SetupStep
@@ -398,9 +404,10 @@ export function Setup() {
               payroll settings.
             </p>
             <p>
-              The deployment’s <code>docs/GOOGLE_SETUP.md</code> and{" "}
-              <code>.env.example</code> contain the exact environment variables
-              and deployment instructions.
+              The deployment’s <code>docs/DATABASE.md</code>,{" "}
+              <code>docs/GOOGLE_SETUP.md</code>, and <code>.env.example</code>{" "}
+              contain the exact environment variables and deployment
+              instructions.
             </p>
           </SetupStep>
         </div>

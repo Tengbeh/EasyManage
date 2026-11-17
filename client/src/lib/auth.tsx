@@ -6,7 +6,11 @@ export type Session = {
   user: Row;
   permissions: string[];
   csrfToken: string;
-  connection: { configured: boolean; connected: boolean };
+  connection: {
+    configured: boolean;
+    connected: boolean;
+    provider?: "postgresql";
+  };
 };
 const AuthContext = createContext<{
   session?: Session;

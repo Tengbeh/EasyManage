@@ -103,6 +103,7 @@ function fixture() {
     NODE_ENV: "test",
     CLIENT_URL: "http://localhost:3000",
     SESSION_SECRET: "test-session-secret-longer-than-thirty-two-characters",
+    DATABASE_URL: "postgresql://test-only-injected-repository",
     GOOGLE_CLIENT_ID: "test-client",
     GOOGLE_CLIENT_SECRET: "test-secret",
     GOOGLE_SHEETS_SPREADSHEET_ID: "test-sheet",
@@ -315,58 +316,39 @@ test("salary history retains baseline and employee directory filters are applied
   assert.equal(history.body.data[0].summary, "Employee created");
   assert.equal(history.body.data[0].new_value, undefined);
 });
-test("attendance and leave enforce uniqueness, chronology, and approval states", async () => {
+test("legacy attendance and leave routes preserve reads but cannot bypass workforce approvals", async () => {
   const f = fixture();
   const admin = await f.login();
   const e = (
     await admin.write("post", "/api/employees", f.employee()).expect(201)
   ).body.data;
-  const a = {
+  const record = {
+    attendance_id: randomUUID(),
     employee_id: e.employee_id,
     date: "2026-01-10",
     attendance_status: "late",
     check_in: "09:20",
     check_out: "17:00",
   };
-  await admin.write("post", "/api/attendance", a).expect(201);
-  await admin.write("post", "/api/attendance", a).expect(409);
+  f.repo.data.Attendance.push(record);
   const list = await admin.agent.get("/api/attendance?status=late").expect(200);
   assert.equal(list.body.meta.total, 1);
+  await admin.write("post", "/api/attendance", record).expect(409);
   await admin
-    .write("post", "/api/attendance", {
-      ...a,
-      date: "2026-01-11",
-      check_out: "08:00",
+    .write("put", `/api/attendance/${record.attendance_id}`, {
+      attendance_status: "present",
     })
-    .expect(422);
-  const leave = (
-    await admin
-      .write("post", "/api/leave", {
-        employee_id: e.employee_id,
-        leave_type: "annual",
-        start_date: "2026-01-12",
-        end_date: "2026-01-14",
-        reason: "Holiday",
-      })
-      .expect(201)
-  ).body.data;
-  await admin
-    .write("patch", `/api/leave/${leave.leave_id}/approve`, {})
-    .expect(200);
+    .expect(409);
   await admin
     .write("post", "/api/leave", {
       employee_id: e.employee_id,
-      leave_type: "sick",
-      start_date: "2026-01-13",
-      end_date: "2026-01-15",
-      reason: "Sick",
+      leave_type: "annual",
+      start_date: "2026-01-12",
+      end_date: "2026-01-14",
+      reason: "Holiday",
     })
     .expect(409);
-  await admin
-    .write("patch", `/api/leave/${leave.leave_id}/reject`, {
-      reason: "Changed",
-    })
-    .expect(409);
+  assert.equal(f.repo.data.Attendance[0].attendance_status, "late");
 });
 test("loan payments and payroll reservation reconcile exactly once through the full workflow", async () => {
   const f = fixture();

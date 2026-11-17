@@ -1,3 +1,4 @@
+import { employmentStatusAt } from "./services/employment.js";
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
@@ -222,6 +223,24 @@ async function validateRecord(
     );
   }
   if (table === "Users") {
+    if (row.employee_id) {
+      await d.find("Employees", row.employee_id);
+      assert(
+        !(await d.list("Users")).some(
+          (u) => u.employee_id === row.employee_id && u.user_id !== row.user_id,
+        ),
+        409,
+        "EMPLOYEE_ACCOUNT_EXISTS",
+        "This employee is already linked to another account.",
+      );
+    }
+    assert(
+      row.role !== "employee" || row.employee_id,
+      422,
+      "EMPLOYEE_LINK_REQUIRED",
+      "Employee accounts must be linked to an employee record.",
+    );
+
     assert(
       req.user.role === "administrator",
       403,
@@ -274,18 +293,7 @@ async function validateRecord(
   }
 }
 export function effectiveEmployee(row: Row): Row {
-  const today = new Date().toISOString().slice(0, 10);
-  let status = row.employment_status;
-  if (row.employment_end_date) {
-    if (
-      row.employment_end_date < today &&
-      ["active", "on_leave"].includes(status)
-    )
-      status = "terminated";
-    else if (row.employment_end_date >= today && status === "terminated")
-      status = "active";
-  }
-  return { ...row, employment_status: status };
+  return { ...row, employment_status: employmentStatusAt(row) };
 }
 export const defaultSettings = () => ({
   setting_id: "company",
@@ -361,6 +369,12 @@ export function installDomain(app: Express, ctx: ApiContext) {
       `/api/${path}`,
       wrap(async (req, res) => {
         requirePermission(req, def.write);
+        assert(
+          !["Attendance", "Leave"].includes(def.table),
+          409,
+          "WORKFORCE_WORKFLOW_REQUIRED",
+          "Use the attendance and leave workforce workflow for this change.",
+        );
         await ctx.mutate(req, res, async (d) => {
           const body = def.schema.parse(req.body);
           const stamp = now();
@@ -424,6 +438,12 @@ export function installDomain(app: Express, ctx: ApiContext) {
       `/api/${path}/:id`,
       wrap(async (req, res) => {
         requirePermission(req, def.write);
+        assert(
+          !["Attendance", "Leave"].includes(def.table),
+          409,
+          "WORKFORCE_WORKFLOW_REQUIRED",
+          "Use the attendance and leave workforce workflow for this change.",
+        );
         await ctx.mutate(req, res, async (d) => {
           const parsed = def.schema.partial().parse(req.body);
           // Zod defaults must not turn an omitted PATCH-like PUT field into an update.
@@ -601,7 +621,7 @@ export function installDomain(app: Express, ctx: ApiContext) {
       });
     }),
   );
-  for (const path of ["bonuses", "penalties", "leave"])
+  for (const path of ["bonuses", "penalties"])
     for (const action of ["approve", "reject"])
       app.patch(
         `/api/${path}/:id/${action}`,

@@ -20,6 +20,11 @@ export const PERMISSIONS = [
   "payroll.approve",
   "payroll.finalize",
   "payroll.pay",
+  "workforce.manage",
+  "attendance.approve",
+  "attendance.payroll",
+  "self.attendance",
+  "self.leave",
   "attendance.read",
   "attendance.write",
   "leave.read",
@@ -34,7 +39,12 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number];
 export const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
   administrator: PERMISSIONS,
+  employee: ["self.attendance", "self.leave"],
   hr: [
+    "workforce.manage",
+    "attendance.approve",
+    "self.attendance",
+    "self.leave",
     "employees.read",
     "employees.write",
     "salaries.read",
@@ -54,6 +64,10 @@ export const ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "reports.hr",
   ],
   accountant: [
+    "attendance.read",
+    "attendance.payroll",
+    "self.attendance",
+    "self.leave",
     "employees.read",
     "salaries.read",
     "salaries.write",

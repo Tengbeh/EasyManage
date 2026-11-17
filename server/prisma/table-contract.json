@@ -1,0 +1,1410 @@
+{
+  "Departments": {
+    "model": "Department",
+    "delegate": "department",
+    "id": "department_id",
+    "fields": {
+      "company_id": "uuid",
+      "department_id": "uuid",
+      "department_name": "text",
+      "description": "text",
+      "department_head": "text",
+      "status": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "department_name"
+      ]
+    ],
+    "indexes": [
+      [
+        "status"
+      ]
+    ],
+    "relations": [],
+    "back": [
+      {
+        "source": "Employees",
+        "name": "Employee_department_id"
+      },
+      {
+        "source": "Payroll",
+        "name": "PayrollRow_department_id"
+      },
+      {
+        "source": "Work_Schedules",
+        "name": "WorkSchedule_department_id"
+      },
+      {
+        "source": "Holidays",
+        "name": "Holiday_department_id"
+      }
+    ]
+  },
+  "Employees": {
+    "model": "Employee",
+    "delegate": "employee",
+    "id": "employee_id",
+    "fields": {
+      "company_id": "uuid",
+      "employee_id": "uuid",
+      "employee_number": "text",
+      "first_name": "text",
+      "last_name": "text",
+      "email": "text",
+      "phone": "text",
+      "address": "text",
+      "gender": "text",
+      "position": "text",
+      "employment_type": "text",
+      "employment_status": "text",
+      "payment_frequency": "text",
+      "bank_name": "text",
+      "account_number": "text",
+      "emergency_contact": "text",
+      "profile_image": "text",
+      "notes": "text",
+      "department_id": "uuid",
+      "date_of_birth": "date",
+      "hire_date": "date",
+      "employment_end_date": "date",
+      "basic_salary": "money",
+      "allowances": "money",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "employee_number"
+      ],
+      [
+        "email"
+      ]
+    ],
+    "indexes": [
+      [
+        "department_id",
+        "employment_status"
+      ],
+      [
+        "hire_date"
+      ],
+      [
+        "employment_end_date"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "department_id",
+        "target": "Departments",
+        "name": "Employee_department_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Users",
+        "name": "User_employee_id"
+      },
+      {
+        "source": "Bonuses",
+        "name": "Bonus_employee_id"
+      },
+      {
+        "source": "Penalties",
+        "name": "Penalty_employee_id"
+      },
+      {
+        "source": "Loans",
+        "name": "Loan_employee_id"
+      },
+      {
+        "source": "Loan_Installments",
+        "name": "LoanInstallment_employee_id"
+      },
+      {
+        "source": "Payroll",
+        "name": "PayrollRow_employee_id"
+      },
+      {
+        "source": "Attendance",
+        "name": "Attendance_employee_id"
+      },
+      {
+        "source": "Leave",
+        "name": "LeaveRequest_employee_id"
+      },
+      {
+        "source": "Salary_History",
+        "name": "SalaryHistory_employee_id"
+      },
+      {
+        "source": "Loan_Payments",
+        "name": "LoanPayment_employee_id"
+      },
+      {
+        "source": "Shift_Assignments",
+        "name": "ShiftAssignment_employee_id"
+      },
+      {
+        "source": "Attendance_Corrections",
+        "name": "AttendanceCorrection_employee_id"
+      },
+      {
+        "source": "Leave_Entitlements",
+        "name": "LeaveEntitlement_employee_id"
+      },
+      {
+        "source": "Attendance_Payroll_Inputs",
+        "name": "AttendancePayrollInput_employee_id"
+      },
+      {
+        "source": "Leave_Attachments",
+        "name": "LeaveAttachment_employee_id"
+      }
+    ]
+  },
+  "Users": {
+    "model": "User",
+    "delegate": "user",
+    "id": "user_id",
+    "fields": {
+      "company_id": "uuid",
+      "user_id": "uuid",
+      "full_name": "text",
+      "email": "text",
+      "google_id": "text",
+      "profile_image": "text",
+      "role": "text",
+      "department": "text",
+      "status": "text",
+      "employee_id": "uuid",
+      "permissions": "json",
+      "last_login": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "email"
+      ],
+      [
+        "google_id"
+      ],
+      [
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "role",
+        "status"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "User_employee_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Notifications_Read",
+        "name": "NotificationRead_user_id"
+      },
+      {
+        "source": "Idempotency",
+        "name": "IdempotencyRecord_user_id"
+      },
+      {
+        "source": "Attendance_Corrections",
+        "name": "AttendanceCorrection_requested_by"
+      },
+      {
+        "source": "Approval_Decisions",
+        "name": "ApprovalDecision_approver_id"
+      }
+    ]
+  },
+  "Bonuses": {
+    "model": "Bonus",
+    "delegate": "bonus",
+    "id": "bonus_id",
+    "fields": {
+      "company_id": "uuid",
+      "bonus_id": "uuid",
+      "employee_id": "uuid",
+      "payroll_id": "uuid",
+      "bonus_type": "text",
+      "description": "text",
+      "effective_month": "text",
+      "status": "text",
+      "reason": "text",
+      "created_by": "text",
+      "approved_by": "text",
+      "rejection_reason": "text",
+      "amount": "money",
+      "approved_at": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "effective_month",
+        "status"
+      ],
+      [
+        "payroll_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "Bonus_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "payroll_id",
+        "target": "Payroll",
+        "name": "Bonus_payroll_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Attendance_Payroll_Inputs",
+        "name": "AttendancePayrollInput_bonus_id"
+      }
+    ]
+  },
+  "Penalties": {
+    "model": "Penalty",
+    "delegate": "penalty",
+    "id": "penalty_id",
+    "fields": {
+      "company_id": "uuid",
+      "penalty_id": "uuid",
+      "employee_id": "uuid",
+      "payroll_id": "uuid",
+      "penalty_type": "text",
+      "description": "text",
+      "effective_month": "text",
+      "status": "text",
+      "reason": "text",
+      "created_by": "text",
+      "approved_by": "text",
+      "rejection_reason": "text",
+      "amount": "money",
+      "approved_at": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "effective_month",
+        "status"
+      ],
+      [
+        "payroll_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "Penalty_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "payroll_id",
+        "target": "Payroll",
+        "name": "Penalty_payroll_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Attendance_Payroll_Inputs",
+        "name": "AttendancePayrollInput_penalty_id"
+      }
+    ]
+  },
+  "Loans": {
+    "model": "Loan",
+    "delegate": "loan",
+    "id": "loan_id",
+    "fields": {
+      "company_id": "uuid",
+      "loan_id": "uuid",
+      "employee_id": "uuid",
+      "loan_amount": "money",
+      "outstanding_balance": "money",
+      "installment_amount": "money",
+      "installment_frequency": "text",
+      "description": "text",
+      "reason": "text",
+      "status": "text",
+      "approved_by": "text",
+      "created_by": "text",
+      "rejection_reason": "text",
+      "start_date": "date",
+      "end_date": "date",
+      "approved_at": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "loan_id",
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "employee_id",
+        "status"
+      ],
+      [
+        "start_date"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "Loan_employee_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Loan_Installments",
+        "name": "LoanInstallment_loan_id"
+      },
+      {
+        "source": "Loan_Payments",
+        "name": "LoanPayment_loan_id"
+      }
+    ]
+  },
+  "Loan_Installments": {
+    "model": "LoanInstallment",
+    "delegate": "loanInstallment",
+    "id": "installment_id",
+    "fields": {
+      "company_id": "uuid",
+      "installment_id": "uuid",
+      "loan_id": "uuid",
+      "employee_id": "uuid",
+      "payroll_run_id": "uuid",
+      "installment_amount": "money",
+      "amount_paid": "money",
+      "remaining_balance": "money",
+      "reserved_amount": "money",
+      "due_date": "date",
+      "payment_date": "date",
+      "installment_number": "int",
+      "status": "text",
+      "payroll_month": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "loan_id",
+        "installment_number"
+      ],
+      [
+        "installment_id",
+        "loan_id",
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "employee_id",
+        "due_date",
+        "status"
+      ],
+      [
+        "payroll_run_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "LoanInstallment_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "payroll_run_id",
+        "target": "Payroll_Runs",
+        "name": "LoanInstallment_payroll_run_id",
+        "required": false,
+        "extra": []
+      },
+      {
+        "field": "loan_id",
+        "target": "Loans",
+        "name": "LoanInstallment_loan_id",
+        "required": true,
+        "extra": [
+          "employee_id"
+        ]
+      }
+    ],
+    "back": [
+      {
+        "source": "Loan_Payments",
+        "name": "LoanPayment_installment_id"
+      }
+    ]
+  },
+  "Payroll_Runs": {
+    "model": "PayrollRun",
+    "delegate": "payrollRun",
+    "id": "payroll_run_id",
+    "fields": {
+      "company_id": "uuid",
+      "payroll_run_id": "uuid",
+      "payroll_month": "text",
+      "status": "text",
+      "generated_by": "text",
+      "submitted_by": "text",
+      "approved_by": "text",
+      "finalized_by": "text",
+      "paid_by": "text",
+      "reviewed_by": "text",
+      "rejection_reason": "text",
+      "source_hash": "text",
+      "total_employees": "int",
+      "revision": "int",
+      "total_basic_salary": "money",
+      "total_allowances": "money",
+      "total_bonuses": "money",
+      "total_gross_salary": "money",
+      "total_penalties": "money",
+      "total_loan_deductions": "money",
+      "total_deductions": "money",
+      "total_net_payroll": "money",
+      "approved_at": "timestamp",
+      "finalized_at": "timestamp",
+      "paid_at": "timestamp",
+      "reviewed_at": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "warnings_json": "text"
+    },
+    "unique": [
+      [
+        "payroll_month"
+      ]
+    ],
+    "indexes": [
+      [
+        "status",
+        "payroll_month"
+      ]
+    ],
+    "relations": [],
+    "back": [
+      {
+        "source": "Payroll",
+        "name": "PayrollRow_payroll_run_id"
+      },
+      {
+        "source": "Loan_Installments",
+        "name": "LoanInstallment_payroll_run_id"
+      }
+    ]
+  },
+  "Payroll": {
+    "model": "PayrollRow",
+    "delegate": "payrollRow",
+    "id": "payroll_id",
+    "fields": {
+      "company_id": "uuid",
+      "payroll_id": "uuid",
+      "employee_id": "uuid",
+      "payroll_run_id": "uuid",
+      "department_id": "uuid",
+      "payroll_month": "text",
+      "employee_name": "text",
+      "payment_status": "text",
+      "status": "text",
+      "snapshot_json": "text",
+      "basic_salary": "money",
+      "allowances": "money",
+      "bonuses": "money",
+      "gross_salary": "money",
+      "penalties": "money",
+      "loan_deductions": "money",
+      "other_deductions": "money",
+      "tax_deductions": "money",
+      "total_deductions": "money",
+      "net_salary": "money",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "payroll_month"
+      ],
+      [
+        "payroll_run_id",
+        "status"
+      ],
+      [
+        "department_id",
+        "payroll_month"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "department_id",
+        "target": "Departments",
+        "name": "PayrollRow_department_id",
+        "required": false,
+        "extra": []
+      },
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "PayrollRow_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "payroll_run_id",
+        "target": "Payroll_Runs",
+        "name": "PayrollRow_payroll_run_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Bonuses",
+        "name": "Bonus_payroll_id"
+      },
+      {
+        "source": "Penalties",
+        "name": "Penalty_payroll_id"
+      },
+      {
+        "source": "Loan_Payments",
+        "name": "LoanPayment_payroll_id"
+      }
+    ]
+  },
+  "Attendance": {
+    "model": "Attendance",
+    "delegate": "attendance",
+    "id": "attendance_id",
+    "fields": {
+      "company_id": "uuid",
+      "attendance_id": "uuid",
+      "employee_id": "uuid",
+      "date": "date",
+      "check_in": "text",
+      "check_out": "text",
+      "attendance_status": "text",
+      "status": "text",
+      "notes": "text",
+      "source": "text",
+      "approval_status": "text",
+      "reason": "text",
+      "clock_in": "timestamp",
+      "clock_out": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "finalized_at": "timestamp",
+      "approved_at": "timestamp",
+      "work_minutes": "int",
+      "break_minutes": "int",
+      "overtime_minutes": "int",
+      "late_minutes": "int",
+      "early_minutes": "int",
+      "breaks": "json",
+      "schedule_snapshot": "json"
+    },
+    "unique": [
+      [
+        "employee_id",
+        "date"
+      ],
+      [
+        "attendance_id",
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "date",
+        "attendance_status"
+      ],
+      [
+        "employee_id",
+        "approval_status"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "Attendance_employee_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Attendance_Corrections",
+        "name": "AttendanceCorrection_attendance_id"
+      }
+    ]
+  },
+  "Leave": {
+    "model": "LeaveRequest",
+    "delegate": "leaveRequest",
+    "id": "leave_id",
+    "fields": {
+      "company_id": "uuid",
+      "leave_id": "uuid",
+      "employee_id": "uuid",
+      "leave_type_id": "uuid",
+      "supporting_attachment_id": "uuid",
+      "leave_type": "text",
+      "reason": "text",
+      "status": "text",
+      "created_by": "text",
+      "approved_by": "text",
+      "rejection_reason": "text",
+      "start_date": "date",
+      "end_date": "date",
+      "days": "days",
+      "approval_level": "int",
+      "approval_roles": "json",
+      "approved_at": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "leave_id",
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "employee_id",
+        "start_date",
+        "end_date"
+      ],
+      [
+        "status",
+        "leave_type_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "LeaveRequest_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "leave_type_id",
+        "target": "Leave_Types",
+        "name": "LeaveRequest_leave_type_id",
+        "required": false,
+        "extra": []
+      },
+      {
+        "field": "supporting_attachment_id",
+        "target": "Leave_Attachments",
+        "name": "LeaveRequest_supporting_attachment_id",
+        "required": false,
+        "extra": [
+          "employee_id"
+        ]
+      }
+    ],
+    "back": [
+      {
+        "source": "Leave_Attachments",
+        "name": "LeaveAttachment_leave_id"
+      }
+    ]
+  },
+  "Company_Settings": {
+    "model": "CompanySettings",
+    "delegate": "companySettings",
+    "id": "setting_id",
+    "fields": {
+      "company_id": "uuid",
+      "setting_id": "text",
+      "company_name": "text",
+      "company_logo": "text",
+      "company_email": "text",
+      "company_phone": "text",
+      "company_address": "text",
+      "currency": "text",
+      "date_format": "text",
+      "timezone": "text",
+      "default_payment_frequency": "text",
+      "payroll_start_day": "int",
+      "payroll_end_day": "int",
+      "configured_deductions": "json",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [],
+    "relations": [],
+    "back": []
+  },
+  "Audit_Logs": {
+    "model": "AuditLog",
+    "delegate": "auditLog",
+    "id": "log_id",
+    "fields": {
+      "company_id": "uuid",
+      "log_id": "uuid",
+      "user_id": "text",
+      "user_email": "text",
+      "action": "text",
+      "module": "text",
+      "record_id": "text",
+      "previous_value": "text",
+      "new_value": "text",
+      "ip_address": "text",
+      "timestamp": "timestamp",
+      "created_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "user_id",
+        "created_at"
+      ],
+      [
+        "module",
+        "record_id"
+      ],
+      [
+        "created_at"
+      ]
+    ],
+    "relations": [],
+    "back": []
+  },
+  "Salary_History": {
+    "model": "SalaryHistory",
+    "delegate": "salaryHistory",
+    "id": "salary_history_id",
+    "fields": {
+      "company_id": "uuid",
+      "salary_history_id": "uuid",
+      "employee_id": "uuid",
+      "basic_salary": "money",
+      "allowances": "money",
+      "previous_amount": "money",
+      "previous_allowances": "money",
+      "payment_frequency": "text",
+      "previous_payment_frequency": "text",
+      "reason": "text",
+      "changed_by": "text",
+      "effective_date": "date",
+      "created_at": "timestamp"
+    },
+    "unique": [
+      [
+        "employee_id",
+        "effective_date"
+      ]
+    ],
+    "indexes": [
+      [
+        "employee_id",
+        "effective_date"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "SalaryHistory_employee_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Notifications_Read": {
+    "model": "NotificationRead",
+    "delegate": "notificationRead",
+    "id": "notification_read_id",
+    "fields": {
+      "company_id": "uuid",
+      "notification_read_id": "uuid",
+      "user_id": "uuid",
+      "notification_id": "text",
+      "read_at": "timestamp"
+    },
+    "unique": [
+      [
+        "user_id",
+        "notification_id"
+      ]
+    ],
+    "indexes": [],
+    "relations": [
+      {
+        "field": "user_id",
+        "target": "Users",
+        "name": "NotificationRead_user_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Idempotency": {
+    "model": "IdempotencyRecord",
+    "delegate": "idempotencyRecord",
+    "id": "idempotency_id",
+    "fields": {
+      "company_id": "uuid",
+      "idempotency_id": "text",
+      "user_id": "uuid",
+      "request_hash": "text",
+      "response_json": "text",
+      "status_code": "int",
+      "created_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "user_id",
+        "created_at"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "user_id",
+        "target": "Users",
+        "name": "IdempotencyRecord_user_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Loan_Payments": {
+    "model": "LoanPayment",
+    "delegate": "loanPayment",
+    "id": "payment_id",
+    "fields": {
+      "company_id": "uuid",
+      "payment_id": "uuid",
+      "loan_id": "uuid",
+      "installment_id": "uuid",
+      "employee_id": "uuid",
+      "payroll_id": "uuid",
+      "amount": "money",
+      "payment_date": "date",
+      "source": "text",
+      "created_by": "text",
+      "created_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "loan_id",
+        "payment_date"
+      ],
+      [
+        "employee_id",
+        "payment_date"
+      ],
+      [
+        "payroll_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "LoanPayment_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "payroll_id",
+        "target": "Payroll",
+        "name": "LoanPayment_payroll_id",
+        "required": false,
+        "extra": []
+      },
+      {
+        "field": "loan_id",
+        "target": "Loans",
+        "name": "LoanPayment_loan_id",
+        "required": true,
+        "extra": [
+          "employee_id"
+        ]
+      },
+      {
+        "field": "installment_id",
+        "target": "Loan_Installments",
+        "name": "LoanPayment_installment_id",
+        "required": true,
+        "extra": [
+          "loan_id",
+          "employee_id"
+        ]
+      }
+    ],
+    "back": []
+  },
+  "Work_Schedules": {
+    "model": "WorkSchedule",
+    "delegate": "workSchedule",
+    "id": "schedule_id",
+    "fields": {
+      "company_id": "uuid",
+      "schedule_id": "uuid",
+      "department_id": "uuid",
+      "name": "text",
+      "timezone": "text",
+      "expected_start": "text",
+      "expected_end": "text",
+      "work_days": "json",
+      "grace_minutes": "int",
+      "break_minutes": "int",
+      "overtime_after_minutes": "int",
+      "half_day_minutes": "int",
+      "track_breaks": "bool",
+      "overtime_enabled": "bool",
+      "unpaid_absence_enabled": "bool",
+      "overtime_multiplier": "decimal",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "department_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "department_id",
+        "target": "Departments",
+        "name": "WorkSchedule_department_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": [
+      {
+        "source": "Shift_Assignments",
+        "name": "ShiftAssignment_schedule_id"
+      }
+    ]
+  },
+  "Shift_Assignments": {
+    "model": "ShiftAssignment",
+    "delegate": "shiftAssignment",
+    "id": "assignment_id",
+    "fields": {
+      "company_id": "uuid",
+      "assignment_id": "uuid",
+      "employee_id": "uuid",
+      "schedule_id": "uuid",
+      "start_date": "date",
+      "end_date": "date",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "start_date",
+        "end_date"
+      ],
+      [
+        "schedule_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "ShiftAssignment_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "schedule_id",
+        "target": "Work_Schedules",
+        "name": "ShiftAssignment_schedule_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Holidays": {
+    "model": "Holiday",
+    "delegate": "holiday",
+    "id": "holiday_id",
+    "fields": {
+      "company_id": "uuid",
+      "holiday_id": "uuid",
+      "department_id": "uuid",
+      "date": "date",
+      "name": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "date",
+        "department_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "department_id",
+        "target": "Departments",
+        "name": "Holiday_department_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Attendance_Corrections": {
+    "model": "AttendanceCorrection",
+    "delegate": "attendanceCorrection",
+    "id": "correction_id",
+    "fields": {
+      "company_id": "uuid",
+      "correction_id": "uuid",
+      "attendance_id": "uuid",
+      "employee_id": "uuid",
+      "requested_by": "uuid",
+      "status": "text",
+      "reason": "text",
+      "comments": "text",
+      "clock_in": "timestamp",
+      "clock_out": "timestamp",
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "break_minutes": "int"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "status"
+      ],
+      [
+        "attendance_id"
+      ],
+      [
+        "requested_by"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "AttendanceCorrection_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "attendance_id",
+        "target": "Attendance",
+        "name": "AttendanceCorrection_attendance_id",
+        "required": true,
+        "extra": [
+          "employee_id"
+        ]
+      },
+      {
+        "field": "requested_by",
+        "target": "Users",
+        "name": "AttendanceCorrection_requested_by",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Leave_Types": {
+    "model": "LeaveType",
+    "delegate": "leaveType",
+    "id": "leave_type_id",
+    "fields": {
+      "company_id": "uuid",
+      "leave_type_id": "uuid",
+      "name": "text",
+      "accrual_mode": "text",
+      "paid": "bool",
+      "allow_self_approval": "bool",
+      "requires_document": "bool",
+      "annual_entitlement": "days",
+      "carry_forward_limit": "days",
+      "carry_expiry_month": "int",
+      "approval_roles": "json",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "name"
+      ]
+    ],
+    "indexes": [],
+    "relations": [],
+    "back": [
+      {
+        "source": "Leave",
+        "name": "LeaveRequest_leave_type_id"
+      },
+      {
+        "source": "Leave_Entitlements",
+        "name": "LeaveEntitlement_leave_type_id"
+      }
+    ]
+  },
+  "Leave_Entitlements": {
+    "model": "LeaveEntitlement",
+    "delegate": "leaveEntitlement",
+    "id": "entitlement_id",
+    "fields": {
+      "company_id": "uuid",
+      "entitlement_id": "uuid",
+      "employee_id": "uuid",
+      "leave_type_id": "uuid",
+      "year": "int",
+      "days": "days",
+      "reason": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "unique": [
+      [
+        "employee_id",
+        "leave_type_id",
+        "year"
+      ]
+    ],
+    "indexes": [
+      [
+        "year"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "LeaveEntitlement_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "leave_type_id",
+        "target": "Leave_Types",
+        "name": "LeaveEntitlement_leave_type_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Approval_Decisions": {
+    "model": "ApprovalDecision",
+    "delegate": "approvalDecision",
+    "id": "decision_id",
+    "fields": {
+      "company_id": "uuid",
+      "decision_id": "uuid",
+      "approver_id": "uuid",
+      "request_id": "uuid",
+      "request_type": "text",
+      "decision": "text",
+      "comments": "text",
+      "approval_level": "int",
+      "created_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "request_type",
+        "request_id"
+      ],
+      [
+        "approver_id",
+        "created_at"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "approver_id",
+        "target": "Users",
+        "name": "ApprovalDecision_approver_id",
+        "required": true,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Attendance_Payroll_Inputs": {
+    "model": "AttendancePayrollInput",
+    "delegate": "attendancePayrollInput",
+    "id": "input_id",
+    "fields": {
+      "company_id": "uuid",
+      "input_id": "uuid",
+      "employee_id": "uuid",
+      "bonus_id": "uuid",
+      "penalty_id": "uuid",
+      "payroll_month": "text",
+      "type": "text",
+      "status": "text",
+      "reason": "text",
+      "amount": "money",
+      "attendance_ids": "json",
+      "calculation": "json",
+      "policy_snapshot": "json",
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "approved_at": "timestamp"
+    },
+    "unique": [],
+    "indexes": [
+      [
+        "employee_id",
+        "payroll_month",
+        "status"
+      ],
+      [
+        "bonus_id"
+      ],
+      [
+        "penalty_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "AttendancePayrollInput_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "bonus_id",
+        "target": "Bonuses",
+        "name": "AttendancePayrollInput_bonus_id",
+        "required": false,
+        "extra": []
+      },
+      {
+        "field": "penalty_id",
+        "target": "Penalties",
+        "name": "AttendancePayrollInput_penalty_id",
+        "required": false,
+        "extra": []
+      }
+    ],
+    "back": []
+  },
+  "Leave_Attachments": {
+    "model": "LeaveAttachment",
+    "delegate": "leaveAttachment",
+    "id": "attachment_id",
+    "fields": {
+      "company_id": "uuid",
+      "attachment_id": "uuid",
+      "employee_id": "uuid",
+      "leave_id": "uuid",
+      "storage_key": "text",
+      "content_type": "text",
+      "original_name": "text",
+      "sha256": "text",
+      "size": "int",
+      "created_at": "timestamp"
+    },
+    "unique": [
+      [
+        "storage_key"
+      ],
+      [
+        "attachment_id",
+        "employee_id"
+      ]
+    ],
+    "indexes": [
+      [
+        "employee_id"
+      ],
+      [
+        "leave_id"
+      ]
+    ],
+    "relations": [
+      {
+        "field": "employee_id",
+        "target": "Employees",
+        "name": "LeaveAttachment_employee_id",
+        "required": true,
+        "extra": []
+      },
+      {
+        "field": "leave_id",
+        "target": "Leave",
+        "name": "LeaveAttachment_leave_id",
+        "required": false,
+        "extra": [
+          "employee_id"
+        ]
+      }
+    ],
+    "back": [
+      {
+        "source": "Leave",
+        "name": "LeaveRequest_supporting_attachment_id"
+      }
+    ]
+  }
+}

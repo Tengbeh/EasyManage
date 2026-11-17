@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { Request, Response } from "express";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { createHash, randomUUID } from "node:crypto";
@@ -21,13 +22,27 @@ export interface MutationResult {
 }
 export class ApiContext {
   readonly mutex = new Mutex();
-  constructor(public repository: Repository) {}
+  private scope = new AsyncLocalStorage<Repository>();
+  constructor(private base: Repository) {}
+  get repository() {
+    return this.scope.getStore() || this.base;
+  }
+  withRepository<T>(repository: Repository, fn: () => T): T {
+    return this.scope.run(repository, fn);
+  }
+  async transaction<T>(fn: (repository: Repository) => Promise<T>): Promise<T> {
+    const repository = this.repository;
+    const run = (tx: Repository) => this.withRepository(tx, () => fn(tx));
+    return repository.transaction
+      ? repository.transaction(run)
+      : this.mutex.run(() => run(repository));
+  }
   async mutate(
     req: Request,
     res: Response,
     fn: (data: RequestData) => Promise<MutationResult>,
   ) {
-    await this.mutex.run(async () => {
+    const response = await this.transaction(async (repository) => {
       const key = req.header("Idempotency-Key");
       assert(
         key && /^[A-Za-z0-9_-]{16,128}$/.test(key),
@@ -45,11 +60,11 @@ export class ApiContext {
           }),
         )
         .digest("hex");
-      this.repository.invalidate?.();
-      const d = new RequestData(this.repository);
-      const ledger = (await d.list("Idempotency")).find(
-        (r) => r.idempotency_id === key,
-      );
+      repository.invalidate?.();
+      const d = new RequestData(repository);
+      const ledger = repository.find
+        ? await repository.find("Idempotency", key)
+        : (await d.list("Idempotency")).find((r) => r.idempotency_id === key);
       if (ledger) {
         assert(
           ledger.user_id === req.user.user_id && ledger.request_hash === hash,
@@ -57,18 +72,16 @@ export class ApiContext {
           "IDEMPOTENCY_CONFLICT",
           "This Idempotency-Key was already used for another request.",
         );
-        res
-          .status(Number(ledger.status_code) || 200)
-          .json(
-            JSON.parse(
-              String(ledger.response_json).startsWith("gz:")
-                ? gunzipSync(
-                    Buffer.from(ledger.response_json.slice(3), "base64"),
-                  ).toString()
-                : ledger.response_json,
-            ),
-          );
-        return;
+        return {
+          status: Number(ledger.status_code) || 200,
+          body: JSON.parse(
+            String(ledger.response_json).startsWith("gz:")
+              ? gunzipSync(
+                  Buffer.from(ledger.response_json.slice(3), "base64"),
+                ).toString()
+              : ledger.response_json,
+          ),
+        };
       }
       const result = await fn(d);
       const body = { data: result.data };
@@ -103,7 +116,7 @@ export class ApiContext {
         "RESPONSE_TOO_LARGE",
         "This operation exceeds the supported single-batch response size. Contact an administrator.",
       );
-      await this.repository.commit([
+      await repository.commit([
         ...result.changes,
         { table: "Audit_Logs", record: audit },
         {
@@ -118,8 +131,10 @@ export class ApiContext {
           },
         },
       ]);
-      res.status(result.status || 200).json(body);
+      return { status: result.status || 200, body };
     });
+    // Never acknowledge a successful mutation before the database transaction commits.
+    res.status(response.status).json(response.body);
   }
 }
 export function filtered(

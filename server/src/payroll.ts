@@ -1,3 +1,4 @@
+import { validateAttendanceInputs } from "./workforce/payroll-inputs.js";
 import type { Express } from "express";
 import { createHash, randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
@@ -73,6 +74,7 @@ export async function payrollInput(d: RequestData, payroll_month: string) {
     settings,
     allPayroll,
     runs,
+    attendance_inputs,
   ] = await Promise.all([
     d.list("Employees"),
     d.list("Salary_History"),
@@ -83,14 +85,29 @@ export async function payrollInput(d: RequestData, payroll_month: string) {
     getSettings(d),
     d.list("Payroll"),
     d.list("Payroll_Runs"),
+    d.list("Attendance_Payroll_Inputs"),
   ]);
   const finalRuns = new Set(
     runs
       .filter((r) => ["finalized", "paid"].includes(r.status))
       .map((r) => r.payroll_run_id),
   );
+  const activeAttendanceInputs = attendance_inputs.filter(
+    (r) => r.payroll_month === payroll_month && r.status === "approved",
+  );
+  if (
+    !runs.some(
+      (r) =>
+        r.payroll_month === payroll_month &&
+        ["finalized", "paid"].includes(r.status),
+    )
+  )
+    await validateAttendanceInputs(d, activeAttendanceInputs);
   return {
     payroll_month,
+    attendance_inputs: attendance_inputs.filter(
+      (r) => r.payroll_month === payroll_month && r.status === "approved",
+    ),
     employees: employees.map(publicRow),
     salary_history: salary_history.map(publicRow),
     bonuses: bonuses.map(publicRow),
@@ -115,6 +132,9 @@ async function calculate(d: RequestData, month: string) {
       ...result,
       rows: result.rows.map((r) => ({
         ...r,
+        attendance_inputs: input.attendance_inputs.filter(
+          (a) => a.employee_id === r.employee_id,
+        ),
         department_name:
           departments.find((x) => x.department_id === r.department_id)
             ?.department_name || "",

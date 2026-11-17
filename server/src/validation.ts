@@ -150,7 +150,8 @@ export const userSchema = z
   .object({
     full_name: required,
     email: z.string().trim().email().toLowerCase(),
-    role: z.enum(["administrator", "hr", "accountant"]),
+    role: z.enum(["administrator", "hr", "accountant", "employee"]),
+    employee_id: z.string().max(100).optional(),
     department: short.optional(),
     status: z.enum(["active", "inactive"]).default("active"),
     permissions: z

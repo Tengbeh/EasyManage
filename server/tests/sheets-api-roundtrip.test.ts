@@ -13,6 +13,7 @@ import { defaultSettings } from "../src/domain.js";
 test("full payroll workflow survives Sheets cell serialization and validates every written schema column", async () => {
   const config = readConfig({
     NODE_ENV: "test",
+    DATABASE_URL: "postgresql://test-only-injected-repository",
     CLIENT_URL: "http://localhost:3000",
     SESSION_SECRET: "test-session-secret-at-least-thirty-two-characters",
     GOOGLE_CLIENT_ID: "test",

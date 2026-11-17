@@ -15,3 +15,6 @@ playwright-report/
 .sessions/
 *.lock.tmp
 *.tsbuildinfo
+
+server/src/generated/
+private-storage/

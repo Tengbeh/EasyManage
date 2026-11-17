@@ -29,7 +29,9 @@ export async function request<T = Row>(
     credentials: "include",
     headers: {
       Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !(init.body instanceof FormData)
+        ? { "Content-Type": "application/json" }
+        : {}),
       ...(init.method && init.method !== "GET"
         ? {
             "x-csrf-token": csrfToken,
@@ -118,5 +120,36 @@ export async function downloadReport(
   a.href = url;
   a.download = `easymanage-${type}.${format}`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function downloadFile(path: string, filename: string) {
+  const response = await fetch(`/api${path}`, { credentials: "include" });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new ApiError(
+      result.error?.message || "Could not download this file.",
+      response.status,
+    );
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const supplied = /filename="([^"\r\n]+)"/i.exec(disposition)?.[1];
+  const extension = (
+    {
+      "application/pdf": "pdf",
+      "image/png": "png",
+      "image/jpeg": "jpg",
+    } as Record<string, string>
+  )[blob.type];
+  anchor.download =
+    supplied?.replace(/[\\/]/g, "_") ||
+    (extension && !/\.[a-z0-9]+$/i.test(filename)
+      ? `${filename}.${extension}`
+      : filename);
+  anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

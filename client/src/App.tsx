@@ -1,3 +1,4 @@
+import { Workforce } from "@/pages/Workforce";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Link,
@@ -130,25 +131,22 @@ export function App() {
       <Route path="/setup" element={<Setup />} />
       <Route element={<Protected />}>
         <Route element={<Shell />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<HomePage />} />
           <Route path="employees" element={<Employees />} />
           <Route path="employees/:id" element={<EmployeeProfile />} />
           <Route path="salaries" element={<Salaries />} />
-          {[
-            "departments",
-            "bonuses",
-            "penalties",
-            "loans",
-            "attendance",
-            "users",
-          ].map((resource) => (
-            <Route
-              key={resource}
-              path={resource}
-              element={<ResourcePage key={resource} resource={resource} />}
-            />
-          ))}
-          <Route path="leave" element={<ResourcePage resource="leave" />} />
+          {["departments", "bonuses", "penalties", "loans", "users"].map(
+            (resource) => (
+              <Route
+                key={resource}
+                path={resource}
+                element={<ResourcePage key={resource} resource={resource} />}
+              />
+            ),
+          )}
+          <Route path="attendance" element={<Workforce />} />
+          <Route path="workforce" element={<Workforce />} />
+          <Route path="leave" element={<Workforce initialTab="leave" />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="reports" element={<Reports />} />
           <Route path="notifications" element={<Notifications />} />
@@ -170,6 +168,14 @@ export function App() {
         </Route>
       </Route>
     </Routes>
+  );
+}
+function HomePage() {
+  const { session } = useAuth();
+  return session?.user.role === "employee" ? (
+    <Navigate to="/attendance" replace />
+  ) : (
+    <Dashboard />
   );
 }
 function Protected() {
@@ -238,10 +244,20 @@ function Shell() {
         {navigation
           .filter(
             (n) =>
-              !n.permission ||
-              (n.permission === "reports"
-                ? can("reports.hr") || can("reports.finance")
-                : can(n.permission)),
+              (!n.permission &&
+                !(n.path === "/" && session?.user.role === "employee")) ||
+              (n.permission === "attendance.read"
+                ? [
+                    "attendance.read",
+                    "self.attendance",
+                    "leave.read",
+                    "self.leave",
+                    "attendance.payroll",
+                    "workforce.manage",
+                  ].some(can)
+                : n.permission === "reports"
+                  ? can("reports.hr") || can("reports.finance")
+                  : can(n.permission || "")),
           )
           .map((n) => (
             <div key={n.path}>

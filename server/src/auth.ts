@@ -1,3 +1,5 @@
+import { employmentStatusAt } from "./services/employment.js";
+import { ApiContext } from "./context.js";
 import { OAuth2Client } from "google-auth-library";
 import type { Express, Request, Response, NextFunction } from "express";
 import {
@@ -7,15 +9,16 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import type { Config } from "./config.js";
-import { googleConfigured, sheetsConfigured } from "./config.js";
+import { googleConfigured, databaseConfigured } from "./config.js";
 import type { Repository, Row } from "./repository.js";
-import { Mutex, publicRow } from "./repository.js";
+import { publicRow } from "./repository.js";
 import { AppError, assert } from "./errors.js";
 import { permissions } from "./permissions.js";
 
 declare module "express-session" {
   interface SessionData {
     userId?: string;
+    companyId?: string;
     csrfToken?: string;
     oauth?: {
       state: string;
@@ -127,19 +130,18 @@ function equal(a: unknown, b: string) {
 }
 export function installAuth(
   app: Express,
-  repository: Repository,
+  ctx: ApiContext,
   config: Config,
-  mutex: Mutex,
   provider: GoogleProvider,
 ) {
   app.get(
     "/api/auth/google",
     wrap(async (req, res) => {
       assert(
-        googleConfigured(config) && sheetsConfigured(config),
+        googleConfigured(config) && databaseConfigured(config),
         503,
         "GOOGLE_NOT_CONFIGURED",
-        "Google sign-in and the company spreadsheet must be configured before sign-in. See /setup.",
+        "Google sign-in and the PostgreSQL database must be configured before sign-in. See /setup.",
       );
       const verifier = randomBytes(48).toString("base64url");
       const oauth = {
@@ -201,7 +203,7 @@ export function installAuth(
         "INVALID_GOOGLE_NONCE",
         "Google sign-in identity did not match this browser session.",
       );
-      const user = await mutex.run(async () => {
+      const user = await ctx.transaction(async (repository) => {
         repository.invalidate?.();
         const users = await repository.list("Users");
         const email = identity.email.toLowerCase();
@@ -262,6 +264,7 @@ export function installAuth(
         req.session.regenerate((e) => (e ? reject(e) : resolve())),
       );
       req.session.userId = user.user_id;
+      req.session.companyId = user.company_id || config.defaultCompanyId;
       req.session.csrfToken = randomBytes(32).toString("base64url");
       await new Promise<void>((resolve, reject) =>
         req.session.save((e) => (e ? reject(e) : resolve())),
@@ -278,15 +281,44 @@ export function installAuth(
         "AUTHENTICATION_REQUIRED",
         "Sign in with Google to continue.",
       );
-      const users = await repository.list("Users");
-      const user = users.find((u) => u.user_id === req.session.userId);
+      const repository =
+        ctx.repository.forCompany?.(
+          req.session.companyId || config.defaultCompanyId!,
+        ) || ctx.repository;
+      const user = repository.find
+        ? await repository.find("Users", req.session.userId)
+        : (await repository.list("Users")).find(
+            (u) => u.user_id === req.session.userId,
+          );
       assert(
         user && user.status === "active",
         401,
         "SESSION_REVOKED",
         "This account is inactive or no longer authorized.",
       );
-      req.user = publicRow(user);
+      if (user.employee_id) {
+        const employee = repository.find
+          ? await repository.find("Employees", user.employee_id)
+          : (await repository.list("Employees")).find(
+              (e) => e.employee_id === user.employee_id,
+            );
+        assert(
+          employee &&
+            !(
+              employee.employment_end_date &&
+              employee.employment_end_date <
+                new Date().toISOString().slice(0, 10)
+            ) &&
+            employmentStatusAt(employee) !== "terminated",
+          401,
+          "SESSION_REVOKED",
+          "Employee access has ended.",
+        );
+      }
+      req.user = {
+        ...publicRow(user),
+        company_id: req.session.companyId || config.defaultCompanyId,
+      };
       req.permissions = permissions(user);
       if (!req.session.csrfToken)
         req.session.csrfToken = randomBytes(32).toString("base64url");
@@ -305,7 +337,7 @@ export function installAuth(
           "The request origin is not allowed.",
         );
       }
-      next();
+      ctx.withRepository(repository, next);
     }),
   );
   const me = wrap(async (req, res) =>
@@ -314,7 +346,11 @@ export function installAuth(
         user: req.user,
         permissions: req.permissions,
         csrfToken: req.session.csrfToken,
-        connection: { configured: sheetsConfigured(config), connected: true },
+        connection: {
+          configured: databaseConfigured(config),
+          connected: true,
+          provider: "postgresql",
+        },
       },
     }),
   );

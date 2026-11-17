@@ -271,6 +271,7 @@ const config = readConfig({
   NODE_ENV: "test",
   CLIENT_URL: "http://127.0.0.1:3101",
   SESSION_SECRET: "local-qa-session-secret-not-a-production-credential",
+  DATABASE_URL: "postgresql://test-only-injected-repository",
   GOOGLE_CLIENT_ID: "test-client",
   GOOGLE_CLIENT_SECRET: "test-secret",
   GOOGLE_SHEETS_SPREADSHEET_ID: "test-sheet",

@@ -1,136 +1,90 @@
 # EasyManage
 
-A full-stack employee and payroll management MVP with React/Vite/TypeScript and Express/TypeScript. Google OAuth authenticates authorized users; a private Google Spreadsheet stores business records. The frontend never receives Google secrets and never uses localStorage or static JSON as a business database.
+**Manage Your People. Simplify Your Payroll.**
 
-**Connection status:** Google OAuth credentials and a private spreadsheet must be configured by the deploying company. An unconfigured deployment serves the login/setup screens and denies business access. The automated test suite uses isolated test doubles; passing those tests does not establish a live Google connection.
+EasyManage is a React/TypeScript employee and payroll application with an Express API, verified Google OAuth, server sessions, and **PostgreSQL through Prisma**. Frontend and backend remain separate in `client/` and `server/`. Database access and financial calculations run exclusively on the server.
 
-Workspace deployment: [Open EasyManage](https://easymanage-2y6bf83.solid.site). Google setup is pending.
+The existing employee, salary history, bonus, penalty, loan, payroll, exports, administration and audit features are preserved. Phase 4 adds workforce schedules, server-authoritative attendance, breaks, corrections, approvals, configurable leave balances and private supporting documents. Attendance affects payroll only through explicitly approved policy-backed inputs. Finalized payroll retains its original snapshots.
 
-## What is included
+## Run locally
 
-- Permission-aware responsive navigation and dashboard with backend-derived metrics and charts.
-- Employee directory, profiles, departments, employment status, dated salary adjustments and history.
-- Bonus and penalty approval workflows, loans, schedules and payment reconciliation.
-- Backend decimal-safe monthly payroll preview, draft, submission, approval, finalization and separate payment recording; saved snapshots and duplicate-period protection.
-- Manual attendance and leave approvals, reports with CSV/Excel/PDF exports, notifications and audit logs.
-- Administrator user management, role defaults and explicit permission grants, and company settings.
-- Google Sheets repository, automatic schema initialization, secure administrator bootstrap and optional development demo seed.
-- CSRF protection, secure server-side sessions, verified Google identity, centralized permissions, request validation, rate limiting, serialized writes and idempotency records.
+Use Node 22.23 or newer within the Node 22 LTS series and PostgreSQL 17. Use a dedicated development database.
 
-The application records payroll; it does not transfer funds to employees. Company tax/deduction settings must be configured. Read [architecture and financial policy](docs/ARCHITECTURE.md) before using real payroll.
-
-## Project layout
-
-```
-easy-manage/
-  client/                 React application, reusable UI and feature pages
-  server/                 Express APIs, repositories, validators and payroll engine
-    src/services/         Pure decimal-safe payroll calculator
-    test/                 Backend integration and security tests
-    tests/                Payroll engine tests
-  docs/                   Google connection, architecture, deployment and QA notes
-  deploy/                 systemd service example
-  CONTRACT.md             API conventions and data schema
-```
-
-## Local development
-
-Requirements: Node.js 22.12+ and npm, a Google Cloud project, an OAuth web client and a private Google Spreadsheet shared with a backend service account.
-
-```bash
+```sh
 npm run install:all
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-Fill `server/.env` using [the Google setup guide](docs/GOOGLE_SETUP.md). Keep development and production spreadsheets separate. Frontend environment values are public configuration only. Do not put secrets in `VITE_` variables.
+Set the private backend environment values described below. To run local PostgreSQL with Docker, set `POSTGRES_PASSWORD` in your shell and start `docker compose -f compose.postgres.yml up -d`. Set `DATABASE_URL` to that database; never commit its password.
 
-In one terminal:
-
-```bash
+```sh
+cd server
+npm run prisma:generate
+npm run db:migrate
+npm run db:bootstrap -- --name 'Your company' --currency USD --admin-email admin@example.com --admin-name 'Administrator'
+cd ..
 npm run dev:server
-```
-
-In another:
-
-```bash
+# In a separate terminal:
 npm run dev:client
 ```
 
-Use the frontend development URL printed by Vite. Configure `CLIENT_URL` to that exact origin and the OAuth callback to the backend callback URL. The development proxy sends `/api` traffic to the backend. Production serves the built client and APIs from one HTTPS origin.
+Open `http://localhost:5173`. The Vite development proxy sends `/api` to port 3001. A Google account must match an active authorized application user. There is no open employee signup: administrators invite accounts and link employee users to their employee record.
 
-## Google connection and initial administrator
+## Backend configuration
 
-Follow [GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md) for Cloud project creation, API enablement, consent screen, OAuth web credentials, service identity and private spreadsheet sharing. Backend variables include:
+| Variable                                   | Purpose                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                             | Private PostgreSQL connection URL; required for application persistence                     |
+| `DEFAULT_COMPANY_ID`                       | Bootstrap company UUID; existing deployments use the same ID for migration and runtime      |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth web application credentials, backend only                                             |
+| `GOOGLE_CALLBACK_URL`                      | Exact registered callback, such as `http://localhost:3001/api/auth/google/callback` locally |
+| `CLIENT_URL`                               | Frontend origin; HTTPS application origin in production                                     |
+| `SESSION_SECRET`                           | Cryptographically random secret of at least 32 characters                                   |
+| `SESSION_DIR`                              | Private persistent server session directory                                                 |
+| `STORAGE_ROOT`                             | Private persistent attachment directory, outside all public/static directories              |
+| `SERVER_HOST`, `SERVER_PORT`               | Listener; loopback by default                                                               |
+| `TRUST_PROXY`                              | Trusted reverse-proxy hop count; set only for the deployed topology                         |
+| `BOOTSTRAP_ADMIN_EMAIL`                    | Optional verified Google email allowed to bootstrap an entirely empty company user list     |
+| `NODE_ENV`                                 | `development`, `test`, or `production`                                                      |
 
-| Variable | Purpose |
-| --- | --- |
-| `GOOGLE_CLIENT_ID` | OAuth web application client ID |
-| `GOOGLE_CLIENT_SECRET` | Server-only OAuth secret |
-| `GOOGLE_CALLBACK_URL` | Exact registered callback URL |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` | Private company spreadsheet |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Service identity with spreadsheet Editor access |
-| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Server-only PEM private key; escaped newlines accepted |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Optional private key-file alternative |
-| `SESSION_SECRET` | Stable random secret, at least 32 characters |
-| `CLIENT_URL` | Exact application origin |
-| `SERVER_PORT` | Backend listener, normally 3001 |
-| `NODE_ENV` | `development` or `production` |
-| `SESSION_DIR` | Persistent private server session directory |
-| `WRITER_LOCK_DIR` | Shared host-wide writer lock directory |
-| `TRUST_PROXY` | Known reverse proxy hop count; do not trust arbitrary clients |
-| `BOOTSTRAP_ADMIN_EMAIL` | Explicit initial administrator Google email |
+`client/.env.example` contains public development configuration only. Never put passwords, OAuth secrets, service account credentials, or session secrets in `VITE_` variables.
 
-See `server/.env.example` for defaults and supported aliases. The administrator bootstrap must target a company-controlled email; an arbitrary visitor cannot self-register.
+Create a Google Cloud OAuth web client, configure the consent screen, and register the exact callback URL. Add authorized test users while the consent app is in testing. In production the callback and `CLIENT_URL` must use HTTPS. Authorized accounts and employee mappings are managed inside EasyManage; an unlisted Google account is rejected even if Google authentication succeeds.
 
-Initialize the spreadsheet while the application writer is stopped:
+## Existing Google Sheets installations
 
-```bash
-cd server
-npm run init-sheets
-npm run bootstrap-admin -- admin@your-company.com "First Administrator"
-```
+Sheets is a **legacy import source**, not the runtime database. Do not point a new deployment at the old Sheets backend. Preserve the spreadsheet and use the insert-only importer after taking backups and testing against staging. It preserves original UUIDs, audit/salary history and exact finalized payroll snapshots, refuses divergent records and defaults to a read-only plan.
 
-Pass the administrator email as shown above, or set `BOOTSTRAP_ADMIN_EMAIL` in the server environment and omit the email argument. Sign in with that Google account, then add authorized users in User Management. Unauthorized Google accounts are rejected. The server creates all required worksheets and appends supported schema additions without duplicating initialized records.
+See [database setup and migration](docs/DATABASE.md). The old Google service account variables in `.env.example` are optional and only needed for that maintenance operation or a separately configured reporting integration. No live spreadsheet is made public.
 
-## Development demo data
+## Workforce operations
 
-The optional seed is intended only for a separate development spreadsheet. It creates fictional departments, employees and accounting examples with demo labels. It is not used by the production application as a fallback. Consult the seed command's guard message and set the documented explicit demo acknowledgement before running:
+1. HR configures default department/company schedules, individual shift assignments, holidays and leave types. No statutory entitlement or automatic salary deduction is assumed.
+2. An administrator links each employee's authorized Google account to the employee record and assigns the employee role.
+3. Employees clock in/out, track enabled breaks, submit leave and request corrections. They can only access their own workforce records.
+4. HR reviews attendance and corrections. Finalized attendance can enter a payroll proposal; correction approval never rewrites an existing payroll snapshot.
+5. Leave follows configured approval roles with distinct approvers. Own approval is denied unless the leave policy explicitly permits an administrator to approve their own leave.
+6. Accounting proposes attendance payroll inputs. Approval requires the corresponding bonus or penalty approval permission. Only approved inputs are included in payroll preview and the saved calculation breakdown.
 
-```bash
-cd server
-NODE_ENV=development SEED_DEMO_CONFIRM=WRITE_FICTIONAL_DATA_TO_DEVELOPMENT_SHEETS npm run seed-demo
-```
+See [Phase 4 policies, API and calculations](docs/PHASE4.md).
 
-Never use this command with a production spreadsheet. To start a real company, initialize a new empty production spreadsheet and bootstrap the administrator without demo data.
+## Verification and build
 
-## Payroll workflow
-
-1. Configure currency, allowances, tax/deduction policy and review threshold.
-2. Create employees with their employment dates and initial salary. Make subsequent salary changes through the dated adjustment action.
-3. Record and approve the month's bonuses, penalties and loans.
-4. Choose the payroll month and generate a preview. Review the calculation and any deduction warnings.
-5. Generate a draft, make any authorized draft adjustments, and submit it for approval.
-6. An authorized approver reviews and approves it. Finalize to lock its saved snapshots and reserve loan allocations.
-7. Record payment separately after actual payment. Generation/finalization never implies money has been paid.
-
-Monthly salary is prorated by eligible calendar days in the configured payroll cycle. Weekly/daily/custom conversion and rounding rules are documented in [ARCHITECTURE.md](docs/ARCHITECTURE.md). Approved source IDs are tracked to avoid repeat inclusion. Finalized snapshots remain unchanged when employee records are later updated.
-
-## Validation
-
-```bash
+```sh
 npm test
+npm test --prefix client
+# Isolated migrated PostgreSQL database only:
+RUN_DATABASE_TESTS=1 NODE_ENV=test npm test --prefix server
 npm run build
 ```
 
-Tests cover the financial engine and protected backend workflows. See [QA.md](docs/QA.md) for the verified results, test limitations, and live Google acceptance checks still needed for a newly configured deployment. Browser checks use a localhost-only test fixture and are separate from production authentication.
+The database tests create distinct test companies and do not reset the database. Test-only Google providers and localhost browser fixtures are never used by the production entry point. Live OAuth acceptance additionally requires the configured account to complete Google's browser flow.
 
-## Production
+Production serves the client build from Express, or the client can be hosted behind the same HTTPS reverse proxy. Build both applications, apply reviewed migrations using `prisma migrate deploy`, bootstrap/import the company, then start `npm start --prefix server`. Configure a persistent service, private file/session volumes, HTTPS forwarding, database backups and restore rehearsals. `/api/health` reports database and OAuth configuration/connectivity without credentials. Production cookies are HttpOnly, Secure and SameSite=Lax; mutation endpoints enforce CSRF, origin, role/object permissions and idempotency.
 
-Build using `npm run build`; start with `npm start`. Deploy one writer process per spreadsheet and preserve its private session directory and secret. Follow [DEPLOYMENT.md](docs/DEPLOYMENT.md) for HTTPS, systemd, backups, upgrades, and verification.
+Use one trusted proxy for the default `TRUST_PROXY=1` topology. It must overwrite forwarded protocol headers with the verified external HTTPS scheme; arbitrary client headers must not determine secure-cookie handling. The local compose file exposes PostgreSQL only on loopback. Keep database credentials, backups, private uploads and deployment environment files out of version control.
 
-Do not point multiple app instances at one spreadsheet or manually reorder/edit its data while the writer is active. The MVP uses cached worksheet reads with backend pagination, not indexed queries. For larger installations, replace the repository with a transactional database and add distributed coordination.
+## Delivery stages
 
-## Troubleshooting
-
-The login screen indicates missing Google configuration; `/api/health` exposes configuration presence only. Initialization and an authorized sign-in verify real connectivity. Connection errors, schema mismatch, expired sessions and rejected actions have explicit messages. [Google setup](docs/GOOGLE_SETUP.md#troubleshooting) lists common causes and remedies. Keep raw credentials and confidential payroll records out of logs, source archives and issue reports.
+Phase 4 is developed, tested and delivered independently before Phase 5 starts. Phase 5 covers the complete employee portal, payslips, general documents, lifecycle and HR automation. Phase 6 covers advanced analytics, multi-company onboarding, subscriptions, optional integrations and operational hardening. Completion is recorded only after the corresponding tested commit is pushed; planned capabilities are not represented as operational integrations.

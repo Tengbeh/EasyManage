@@ -1,3 +1,4 @@
+import { salaryAt } from "./salary-at.js";
 /** Pure payroll calculator. Decimal strings enter and leave this boundary.
  * Monthly salaries and allowances are prorated by eligible calendar days in the
  * configured cycle. payroll_month identifies the month the cycle ends in.
@@ -154,25 +155,9 @@ export function calculatePayroll(input: PayrollInput) {
       eligibleDays++;
       const applicable = history.filter((h) => h.effective_date <= date).at(-1);
       const baseline = history[0];
-      const rate = amount(
-        applicable
-          ? firstValue(
-              applicable.basic_salary,
-              applicable.new_amount,
-              applicable.new_salary,
-            )
-          : firstValue(
-              baseline?.previous_amount,
-              baseline?.previous_salary,
-              e.basic_salary,
-            ),
-        "Basic salary",
-      );
-      const frequency =
-        applicable?.payment_frequency ||
-        baseline?.previous_payment_frequency ||
-        e.payment_frequency ||
-        "monthly";
+      const resolvedSalary = salaryAt(e, history, date);
+      const rate = amount(resolvedSalary.basic_salary, "Basic salary");
+      const frequency = resolvedSalary.payment_frequency;
       let divisor = days;
       if (frequency === "weekly") divisor = 7;
       else if (frequency === "daily") divisor = 1;

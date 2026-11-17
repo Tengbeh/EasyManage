@@ -1,5 +1,8 @@
 import "dotenv/config";
 export interface Config {
+  databaseUrl?: string;
+  defaultCompanyId?: string;
+  storageRoot?: string;
   port: number;
   origin: string;
   production: boolean;
@@ -24,6 +27,10 @@ export function readConfig(env = process.env): Config {
       "SESSION_SECRET must have at least 32 characters in production",
     );
   return {
+    databaseUrl: env.DATABASE_URL || "",
+    defaultCompanyId:
+      env.DEFAULT_COMPANY_ID || "00000000-0000-4000-8000-000000000001",
+    storageRoot: env.STORAGE_ROOT || "./private-storage",
     port: Number(env.SERVER_PORT || env.PORT || 3001),
     origin,
     production,
@@ -58,3 +65,5 @@ export const sheetsConfigured = (c: Config) =>
     ((c.googleServiceAccountEmail && c.googlePrivateKey) ||
       c.googleCredentialsFile),
   );
+
+export const databaseConfigured = (c: Config) => Boolean(c.databaseUrl);
