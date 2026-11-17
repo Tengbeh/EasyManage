@@ -32,11 +32,21 @@ systemctl status easymanage
 journalctl -u easymanage --no-pager -n 50
 ```
 
-The production app should bind to loopback behind a TLS proxy. Set the exact production origin, OAuth callback, secure-cookie mode, and trust only the known reverse proxy. Expose HTTPS externally, not the backend listener. The workspace deployment uses a Solid HTTPS endpoint forwarding to port 3001 on a dedicated 4 GB machine.
+The production app should bind to loopback behind a TLS proxy. Set the exact production origin, OAuth callback, secure-cookie mode, and trust only the known reverse proxy. Expose HTTPS externally, not the backend listener.
+
+The workspace deployment uses this chain on a dedicated 4 GB machine:
+
+```text
+Solid HTTPS endpoint → nginx 127.0.0.1:3000 → Express 127.0.0.1:3001
+```
+
+The tunnel does not preserve the external HTTPS protocol in the form Express needs for secure cookies. Install `deploy/nginx-loopback.conf` as an nginx site, change its hostname to the actual application origin, and connect the tunnel to port **3000**. Keep `TRUST_PROXY=1`. This trusted local proxy sets `X-Forwarded-Proto: https` and overwrites forwarded headers; it must remain loopback-only and receive traffic exclusively from the HTTPS tunnel. Do not disable secure cookies to work around missing proxy headers. Query logging is disabled so OAuth authorization codes are not recorded in proxy logs.
+
+This conservative proxy configuration treats traffic as coming from the tunnel's loopback address, so API rate limits are shared across users. Deployments needing per-client IP limits should configure a verified, sanitized client-address chain at their trusted ingress before changing this behavior.
 
 ## Verification
 
-Check `/api/health`, Google authorization, allowlist rejection, session persistence through restart, and a real Sheets write on a development spreadsheet. Test reports and payroll with a known expected total. Confirm private APIs return 401 without a session and mutations fail without the correct CSRF token. Verify both desktop and mobile layouts.
+Check `/api/health`, Google authorization, allowlist rejection, session persistence through restart, and a real Sheets write on a development spreadsheet. Confirm a fresh `/api/auth/google` request returns a session cookie with `Secure`, `HttpOnly`, and `SameSite=Lax`, and that OAuth state survives the redirect. Test reports and payroll with a known expected total. Confirm private APIs return 401 without a session and mutations fail without the correct CSRF token. Verify both desktop and mobile layouts.
 
 ## Backups and upgrades
 

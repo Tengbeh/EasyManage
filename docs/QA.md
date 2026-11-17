@@ -30,17 +30,27 @@ One workflow employee had a monthly salary of 3000.00 on November 1 and 3200.00 
 
 Accessibility checks used axe-core WCAG 2 A/AA and WCAG 2.1 AA rules on dashboard, employees, employee form, payroll, reports, settings, and public login/setup. Contrast and chart-label findings were corrected; the final scan found **0 violations across all eight checked page/form states**. Automated scanning supplements, but does not replace, a full assistive-technology audit.
 
-The public HTTPS deployment serves the actual production build. Private API access without a session returns 401. With Google configuration absent, the login shows setup instructions and Google sign-in remains unavailable.
+The public HTTPS deployment serves the actual production build. Private API access without a session returns 401. When Google configuration is absent, the login shows setup instructions and Google sign-in remains unavailable.
+
+## Live activation checks
+
+The owner subsequently supplied OAuth credentials and submitted the private spreadsheet, service-account key, and explicit administrator email through the protected setup form. On 17 November 2026:
+
+- Service-account authentication succeeded. The Sheets API was enabled in the supplied project using that identity's existing permissions.
+- Real spreadsheet access, additive worksheet initialization, administrator creation, audit insertion, and fresh readback all passed. Existing rows were preserved; no sample business records were seeded.
+- Production health reports OAuth and Sheets configured.
+- A deployment issue preventing secure session cookies was corrected with a loopback nginx proxy between the HTTPS tunnel and Express. Fresh OAuth starts now set Secure/HttpOnly/SameSite=Lax cookies, and matching OAuth state survives the callback. Invalid state is rejected.
+- Employee, payroll, user, settings, and payroll-report endpoints returned 401 without authentication. Supplying conflicting forwarded headers did not weaken the cookie's Secure attribute.
+- The temporary setup collector and submission were removed after installation. Runtime credentials remain outside the repository with mode 0600.
 
 ## Live acceptance still required
 
-No company Google OAuth credentials, service-account key, spreadsheet ID, or initial administrator email were provided. Consequently, the following remain **unverified and blocked by external configuration**:
+The following still require interactive account sign-in or a separate development spreadsheet:
 
 1. Real Google sign-in and consent-screen/domain behavior.
-2. Real private spreadsheet initialization and read/write permissions.
-3. Live authorized/unauthorized Google account sign-in, with administrator, HR and Accountant accounts.
-4. Production cookie/session persistence after authenticated restart.
-5. A known-value payroll and export using a separate development Google Spreadsheet.
+2. Live authorized/unauthorized Google account sign-in, with administrator, HR and Accountant accounts.
+3. Production cookie/session persistence after authenticated restart.
+4. A known-value payroll and export using a separate development Google Spreadsheet.
 
 Follow [GOOGLE_SETUP.md](GOOGLE_SETUP.md). Do not interpret mocked integration tests, configuration flags, or fictional screenshots as evidence of a connected live company database.
 
