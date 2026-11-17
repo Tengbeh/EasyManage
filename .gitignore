@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.pem
+*service-account*.json
+runtime/
+data/
+sessions/
+coverage/
+test-results/
+playwright-report/
+.DS_Store
+.sessions/
+*.lock.tmp
+*.tsbuildinfo
